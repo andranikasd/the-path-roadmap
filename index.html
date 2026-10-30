@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Path</title>
+<meta name="description" content="An interactive 36-month roadmap from senior DevOps to principal engineer, with free video courses for every topic.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M6 22h6l4-12h10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+<script>
+  try { const t = localStorage.getItem('the-path-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+</head>
+<body>
+<a class="skip" href="#phases">Skip to phases</a>
+<header class="top wrap">
+  <div>
+    <p class="eyebrow">Senior DevOps → Principal Engineer · 36 months · 10–12 hours a week</p>
+    <h1>The Path</h1>
+    <p class="lede">Eight phases, every topic backed by a free video course. Pick a line on the map to start, and tick things off as you go.</p>
+  </div>
+  <button class="ghost" id="theme" type="button" aria-label="Switch colour theme">Theme</button>
+</header>
+
+<main>
+  <section class="wrap stats" aria-label="Your progress" id="stats"></section>
+
+  <section class="wrap" aria-labelledby="map-title">
+    <div class="section-head">
+      <h2 id="map-title">The map</h2>
+      <div class="controls">
+        <label class="search"><span class="sr">Search topics and courses</span>
+          <input id="search" type="search" placeholder="Search: eBPF, Raft, Terraform…" autocomplete="off">
+        </label>
+        <label class="toggle"><input id="optional" type="checkbox"> Optional exams</label>
+      </div>
+    </div>
+    <p class="status" id="search-status" role="status"></p>
+    <div class="map-frame">
+      <div class="map-scroll" id="map-scroll" tabindex="0" role="region" aria-label="Roadmap timeline. Scrolls sideways on small screens."></div>
+    </div>
+    <ul class="legend" aria-label="Map legend">
+      <li><svg width="28" height="12" aria-hidden="true"><rect y="2" width="28" height="8" rx="4" class="lg-bar"/></svg> Focus period</li>
+      <li><svg width="28" height="12" aria-hidden="true"><rect y="4.5" width="28" height="3" rx="1.5" class="lg-faint"/></svg> Continuous practice</li>
+      <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" class="lg-dot"/></svg> Topic</li>
+      <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" class="lg-dot done"/></svg> Topic done</li>
+      <li><svg width="14" height="14" aria-hidden="true"><path d="M7 1l6 6-6 6-6-6z" class="lg-core"/></svg> Core exam</li>
+      <li><svg width="14" height="14" aria-hidden="true"><path d="M7 2l5 5-5 5-5-5z" class="lg-opt"/></svg> Optional exam</li>
+    </ul>
+  </section>
+
+  <section class="wrap" id="phases" aria-labelledby="phases-title">
+    <div class="section-head"><h2 id="phases-title">Phases</h2></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="wrap" aria-labelledby="ladder-title">
+    <div class="section-head">
+      <h2 id="ladder-title">Exam ladder</h2>
+      <p class="hint">Check prices and exam codes on the vendor's site before booking.</p>
+    </div>
+    <div class="table-scroll" tabindex="0" role="region" aria-labelledby="ladder-title"><table id="ladder"></table></div>
+  </section>
+
+  <section class="wrap two" aria-label="How to work">
+    <div>
+      <h2>The loop, every phase</h2>
+      <ol class="loop">
+        <li><b>Book the exam</b> on day one, so the phase can't drag on.</li>
+        <li><b>Watch and read</b> one primary course or book, with a terminal open.</li>
+        <li><b>Lab it</b> in a throwaway VM, containerlab, kind or sandbox account.</li>
+        <li><b>Build the project</b>: small, complete and documented.</li>
+        <li><b>Teach it</b> in one post or talk. If you can't explain it, go back.</li>
+        <li><b>Certify</b> after two weeks of exam-style practice.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>A normal week</h2>
+      <dl class="week">
+        <div><dt>Tuesday, 90 min</dt><dd>Primary source and notes</dd></div>
+        <div><dt>Thursday, 90 min</dt><dd>Labs: reproduce it, break it, fix it</dd></div>
+        <div><dt>Weekend, 5–6 h</dt><dd>Project, plus 30 minutes of writing</dd></div>
+        <div><dt>Daily, 10 min</dt><dd>Anki review</dd></div>
+        <div><dt>Every 6 weeks</dt><dd>Retro: what stuck, and should the exam date move?</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="wrap" aria-labelledby="changes-title">
+    <div class="section-head"><h2 id="changes-title">What the review changed</h2></div>
+    <div class="changes">
+      <article><h3>Exams spread out</h3><p>The first draft had an exam in each of nine straight months (M6–M14), on a 10–12 hour week. Core exams are now spaced so you only ever prepare for one, and later phases moved to fit.</p></article>
+      <article><h3>Optional exams made truly optional</h3><p>Pick at most two, and only for a clear reason. The C and Python certificates carry little weight at this level, and projects prove more.</p></article>
+      <article><h3>Two topics added</h3><p>Algorithms, which senior interview loops still test, and AI infrastructure, which platform engineers are now expected to run.</p></article>
+      <article><h3>Paid courses have free alternatives</h3><p>Every paid course (Cantrill, KodeKloud) now has a free video option. Paid practice exams are still worth it close to exam day.</p></article>
+      <article><h3>Factual fixes</h3><p>TLPI predates namespaces and cgroups, so those now point to the man pages and LWN. go-fuzz is replaced by native Go fuzzing. System design proof now points at the design docs project.</p></article>
+      <article><h3>Thin coverage is labelled</h3><p>A few topics have no strong free course. They're marked "Thin coverage" rather than padded out, so lean on the book or docs for those.</p></article>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <p>Your progress is saved in this browser only. Move it between devices with export and import.</p>
+  <div class="foot-actions">
+    <button class="ghost" id="export" type="button">Export progress</button>
+    <label class="ghost file">Import progress<input id="import" type="file" accept="application/json"></label>
+    <button class="ghost" id="reset" type="button">Reset</button>
+  </div>
+</footer>
+
+<div class="tip" id="tip" role="tooltip" hidden></div>
+<div class="scrim" id="scrim" hidden></div>
+<aside class="panel" id="panel" aria-labelledby="panel-title" tabindex="-1" hidden></aside>
+<script src="app.js"></script>
+</body>
+</html>

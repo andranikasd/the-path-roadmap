@@ -1,0 +1,2248 @@
+{
+ "startYear": 2026,
+ "startMonth": 11,
+ "phases": [
+  {
+   "id": "systems",
+   "n": 1,
+   "short": "Systems & OS",
+   "title": "Systems & OS Depth",
+   "start": 1,
+   "end": 6,
+   "tagline": "Know what the kernel is doing when a container is slow, a process hangs, or memory leaks.",
+   "needs": [],
+   "done": [
+    "Explain exactly what happens between typing ls and output appearing",
+    "Build a container runtime with only syscalls, no Docker",
+    "Diagnose CPU, memory, disk and network saturation on a live host in 60 seconds",
+    "Read a flame graph and an strace and say what the bottleneck is",
+    "Stand up an AD domain with PowerShell and manage it via GPO"
+   ],
+   "reading": [
+    "The Linux Programming Interface (Kerrisk)",
+    "Systems Performance, 2nd ed. (Gregg)",
+    "How Linux Works, 3rd ed. (Ward)",
+    "BPF Performance Tools (Gregg)",
+    "Operating Systems: Three Easy Pieces (free)",
+    "namespaces(7), cgroups(7) and LWN's namespaces series (free)"
+   ],
+   "security": "Linux hardening: CIS benchmarks, auditd, SELinux/AppArmor, file capabilities over setuid, sudo policy. On Windows, Kerberos and tiered admin models.",
+   "certs": [
+    {
+     "name": "Linux Foundation Certified SysAdmin",
+     "exam": "LFCS",
+     "cost": "$445",
+     "month": 4,
+     "core": true,
+     "why": "Hands-on Linux administration under time pressure."
+    },
+    {
+     "name": "Windows Server Hybrid Administrator Associate",
+     "exam": "AZ-802",
+     "cost": "$165",
+     "month": 7,
+     "core": false,
+     "why": "Only if your clients run AD and hybrid estates."
+    }
+   ],
+   "projects": [
+    {
+     "name": "tiny-shell in C",
+     "proves": "Process model, fds, signals",
+     "level": "Core",
+     "detail": "Pipes, redirection, job control, signal handling, and an strace walkthrough."
+    },
+    {
+     "name": "mini-container in Go",
+     "proves": "Container internals",
+     "level": "Core",
+     "detail": "Namespaces, cgroups v2, pivot_root and a seccomp profile."
+    },
+    {
+     "name": "eBPF troubleshooting toolkit",
+     "proves": "Production debugging",
+     "level": "Core",
+     "detail": "bpftrace scripts for latency histograms, off-CPU analysis and TCP retransmits."
+    },
+    {
+     "name": "Linux From Scratch build",
+     "proves": "Toolchain and boot",
+     "level": "Stretch",
+     "detail": "Build a system from source and document the boot chain."
+    },
+    {
+     "name": "AD lab as code",
+     "proves": "Windows fluency",
+     "level": "Optional",
+     "detail": "DC, OUs, GPOs and users built with PowerShell DSC, torn down and rebuilt."
+    }
+   ],
+   "topics": [
+    {
+     "title": "Processes, signals, fork/exec, fds, pipes, IPC",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLTsf9UeqkReZHXWY9yJvTwLJWYYPcKEqK",
+       "note": "Implement these in the xv6 teaching kernel. Re-upload of MIT's Fall 2020 lectures.",
+       "title": "MIT 6.S081",
+       "by": "Haibo Yan",
+       "thumb": "https://i.ytimg.com/vi/J3LCzufEYt0/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLzBbfbHQmjyuqBFJ8KpDdcvnLNkvPXbS-",
+       "note": "Wisconsin OS course built on Three Easy Pieces.",
+       "title": "CS 537: OS | University of Wisconsin-Madison",
+       "by": "Meta-cle",
+       "thumb": "https://i.ytimg.com/vi/QEZKgWqwMeA/hqdefault.jpg"
+      }
+     ],
+     "id": "systems-1"
+    },
+    {
+     "title": "Virtual memory, page cache, OOM killer, huge pages, swap",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLWK00SLo2KcQi1hlP2_allMWeG19MkQa7",
+       "note": "",
+       "title": "Linux Internals",
+       "by": "DJ Ware",
+       "thumb": "https://i.ytimg.com/vi/BU9m45WWqjM/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLzBbfbHQmjyuqBFJ8KpDdcvnLNkvPXbS-",
+       "note": "Use the virtualisation lectures.",
+       "title": "CS 537: OS | University of Wisconsin-Madison",
+       "by": "Meta-cle",
+       "thumb": "https://i.ytimg.com/vi/QEZKgWqwMeA/hqdefault.jpg"
+      }
+     ],
+     "id": "systems-2"
+    },
+    {
+     "title": "Scheduler (EEVDF/CFS), load average, CPU pinning, NUMA",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLSIUOFhnxEiC3YTdxwqZqgEY5imVL8U8J",
+       "note": "Short Google course. Predates EEVDF, so pair with the kernel docs.",
+       "title": "Greybeard Qualification - Linux Internals",
+       "by": "Google TechTalks",
+       "thumb": "https://i.ytimg.com/vi/5osOHhBWKOQ/hqdefault.jpg"
+      }
+     ],
+     "id": "systems-3"
+    },
+    {
+     "title": "Namespaces, cgroups v2, capabilities, seccomp",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "sK5i-N34im8",
+       "note": "",
+       "title": "Cgroups, namespaces, and beyond: what are containers made from?",
+       "by": "Docker",
+       "thumb": "https://i.ytimg.com/vi/sK5i-N34im8/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "8fi7uSYlOdc",
+       "note": "Live-codes the mini-container project.",
+       "title": "Containers From Scratch • Liz Rice • GOTO 2018",
+       "by": "GOTO Conferences",
+       "thumb": "https://i.ytimg.com/vi/8fi7uSYlOdc/hqdefault.jpg"
+      }
+     ],
+     "id": "systems-4"
+    },
+    {
+     "title": "systemd internals, boot, journald, udev",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "Kzpm-rGAXos",
+       "note": "",
+       "title": "Systemd Explained: How to Manage Linux Services Easily",
+       "by": "Learn Linux TV",
+       "thumb": "https://i.ytimg.com/vi/Kzpm-rGAXos/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "WMy3OzvBWc0",
+       "note": "",
+       "title": "Linux Server Course - System Configuration and Operation",
+       "by": "freeCodeCamp.org",
+       "thumb": "https://i.ytimg.com/vi/WMy3OzvBWc0/hqdefault.jpg"
+      }
+     ],
+     "id": "systems-5"
+    },
+    {
+     "title": "Filesystems and storage: ext4/XFS, LVM, I/O, fsync",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "MeltFN-bXrQ",
+       "note": "",
+       "title": "Linux Logical Volume Manager (LVM) Deep Dive Tutorial",
+       "by": "Learn Linux TV",
+       "thumb": "https://i.ytimg.com/vi/MeltFN-bXrQ/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "2HobXqXcyVE",
+       "note": "",
+       "title": "LINUX FILE SYSTEM EXPLAINED:  EXT4 , XFS, ZFS, BTRFS",
+       "by": "XPSTECH",
+       "thumb": "https://i.ytimg.com/vi/2HobXqXcyVE/hqdefault.jpg"
+      }
+     ],
+     "id": "systems-6"
+    },
+    {
+     "title": "Observability: strace, perf, bpftrace/eBPF, flame graphs, USE",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "FJW8nGV4jxY",
+       "note": "",
+       "title": "Linux Performance Tools, Brendan Gregg, part 1 of 2",
+       "by": "Brendan Gregg",
+       "thumb": "https://i.ytimg.com/vi/FJW8nGV4jxY/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "K9w2cipqfvc",
+       "note": "",
+       "title": "Performance Analysis: The USE Method",
+       "by": "Deirdré Straughan",
+       "thumb": "https://i.ytimg.com/vi/K9w2cipqfvc/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLDg_GiBbAx-l4D4oKbscJhPFKv2oqPcD_",
+       "note": "",
+       "title": "eBPF Summit 2023",
+       "by": "eBPF & Cilium Community",
+       "thumb": "https://i.ytimg.com/vi/s1mobd8t_u0/hqdefault.jpg"
+      }
+     ],
+     "id": "systems-7"
+    },
+    {
+     "title": "Windows: AD DS, Group Policy, PowerShell, event logs",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "Lyu-vVt-Jg8",
+       "note": "",
+       "title": "Active Directory and Group Policy Complete Course - With Real World Scenarios",
+       "by": "Nord Solutions",
+       "thumb": "https://i.ytimg.com/vi/Lyu-vVt-Jg8/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "ZOoCaWyifmI",
+       "note": "",
+       "title": "Learn PowerShell in Less Than 2 Hours",
+       "by": "K12 Engineer",
+       "thumb": "https://i.ytimg.com/vi/ZOoCaWyifmI/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "_PRw00neec0",
+       "note": "New AZ-802 course with few views so far. Check it against the exam objectives.",
+       "title": "AZ-802 Full Course 2026: Windows Server Administrator Exam Prep (21 Lessons, 57 Questions)",
+       "by": "Cert Espresso",
+       "thumb": "https://i.ytimg.com/vi/_PRw00neec0/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "RHZh5PsixNo",
+       "note": "Covers the older AZ-800, still useful for the fundamentals.",
+       "title": "Exam AZ-800 Administering Windows Server Hybrid Core Infrastructure Full Course 2026",
+       "by": "Geekdom Academy",
+       "thumb": "https://i.ytimg.com/vi/RHZh5PsixNo/hqdefault.jpg"
+      }
+     ],
+     "id": "systems-8"
+    },
+    {
+     "title": "LFCS exam practice",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "UCr04qIB7uc",
+       "note": "General sysadmin course. Map it to the current LFCS objectives.",
+       "title": "Linux System Administration Full Course",
+       "by": "My CS",
+       "thumb": "https://i.ytimg.com/vi/UCr04qIB7uc/hqdefault.jpg"
+      }
+     ],
+     "weak": true,
+     "id": "systems-9"
+    }
+   ]
+  },
+  {
+   "id": "network",
+   "n": 2,
+   "short": "Networking",
+   "title": "Networking Mastery",
+   "start": 4,
+   "end": 9,
+   "tagline": "From the wire to BGP, because it usually is DNS or the network.",
+   "needs": [
+    "systems"
+   ],
+   "done": [
+    "Subnet in your head and design a non-overlapping multi-region IP plan",
+    "Read a Wireshark capture and explain a slow TLS handshake",
+    "Configure eBGP between two ASNs and steer traffic with local-pref",
+    "Explain how a packet leaves a Kubernetes pod and reaches the internet",
+    "Debug MTU, DNS and conntrack issues methodically"
+   ],
+   "reading": [
+    "TCP/IP Illustrated, Vol. 1, 2nd ed.",
+    "Computer Networking: A Top-Down Approach",
+    "High Performance Browser Networking (free)",
+    "Networking and Kubernetes (O'Reilly)",
+    "Beej's Guide to Network Programming (free)",
+    "Cloudflare Learning Center (free)"
+   ],
+   "security": "Segmentation, zero trust, egress filtering, DNSSEC and DoH, TLS configuration with testssl.sh, DDoS mitigation patterns.",
+   "certs": [
+    {
+     "name": "Cisco CCNA",
+     "exam": "200-301",
+     "cost": "$300",
+     "month": 9,
+     "core": true,
+     "why": "Vendor-neutral proof of routing, switching and IP services."
+    }
+   ],
+   "projects": [
+    {
+     "name": "BGP/OSPF lab as code",
+     "proves": "Routing fluency",
+     "level": "Core",
+     "detail": "containerlab and FRR: two ASNs, OSPF inside, eBGP between, failover tests."
+    },
+    {
+     "name": "Annotated packet captures",
+     "proves": "Wire-level reading",
+     "level": "Core",
+     "detail": "pcaps of DNS, TCP, TLS 1.3, HTTP/2 and a retransmit storm, explained."
+    },
+    {
+     "name": "WireGuard mesh with automation",
+     "proves": "Overlay networking, IaC",
+     "level": "Core",
+     "detail": "Mesh across 3 cloud VMs with nftables firewalling and MTU tuning."
+    },
+    {
+     "name": "DNS resolver in Go",
+     "proves": "Deep DNS",
+     "level": "Stretch",
+     "detail": "Recursive resolver from the root servers, with caching and TTLs."
+    }
+   ],
+   "topics": [
+    {
+     "title": "OSI/TCP-IP layers, Ethernet, ARP, VLANs, STP",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLxbwE86jKRgMpuZuLBivzlM8s2Dk5lXBQ",
+       "note": "Your primary CCNA course, with labs and Anki decks.",
+       "title": "Free CCNA v1.1 200-301 | Complete Course 2026",
+       "by": "Jeremy's IT Lab",
+       "thumb": "https://i.ytimg.com/vi/H8W9oMNSuwo/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PL1ya5dD_M8uX-BLUF1FEvUNsYWQL5_l0O",
+       "note": "Kurose's own lectures for the textbook.",
+       "title": "Computer Networking: A Top-Down Approach - Jim Kurose",
+       "by": "Mohammad Shamim",
+       "thumb": "https://i.ytimg.com/vi/74sEFYBBRAY/hqdefault.jpg"
+      }
+     ],
+     "id": "network-1"
+    },
+    {
+     "title": "IPv4/IPv6, subnetting, NAT, conntrack",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLxbwE86jKRgMpuZuLBivzlM8s2Dk5lXBQ",
+       "note": "Use the subnetting, NAT and IPv6 days.",
+       "title": "Free CCNA v1.1 200-301 | Complete Course 2026",
+       "by": "Jeremy's IT Lab",
+       "thumb": "https://i.ytimg.com/vi/H8W9oMNSuwo/hqdefault.jpg"
+      }
+     ],
+     "id": "network-2"
+    },
+    {
+     "title": "TCP deep dive: windows, congestion control, retransmits",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLW8bTPfXNGdAZIKv-y9v_XLXtEqrPtntm",
+       "note": "",
+       "title": "How TCP Works",
+       "by": "Chris Greer",
+       "thumb": "https://i.ytimg.com/vi/XMcYwr-yJGA/hqdefault.jpg"
+      }
+     ],
+     "id": "network-3"
+    },
+    {
+     "title": "Routing: static, OSPF, BGP, ECMP",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "SVo6cDnQQm0",
+       "note": "",
+       "title": "BGP Deep Dive",
+       "by": "Kevin Wallace Training, LLC",
+       "thumb": "https://i.ytimg.com/vi/SVo6cDnQQm0/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PL2WOd01TX09BK0eDMuxS4OaHXrPG6v7x3",
+       "note": "",
+       "title": "CCNP ENARSI Training 2025 | Full Course in English | BGP, OSPF, EIGRP, MPLS & Troubleshooting | By Pankaj Sir",
+       "by": "GuiNet",
+       "thumb": "https://i.ytimg.com/vi/Y-vS71OhBCs/hqdefault.jpg"
+      }
+     ],
+     "id": "network-4"
+    },
+    {
+     "title": "DNS end to end: recursion, DNSSEC, split-horizon",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLW8bTPfXNGdDHoN6G0-HYMsrnzmmlFvAs",
+       "note": "",
+       "title": "How DNS Works - The Series",
+       "by": "Chris Greer",
+       "thumb": "https://i.ytimg.com/vi/UjNQT63PLiQ/hqdefault.jpg"
+      }
+     ],
+     "id": "network-5"
+    },
+    {
+     "title": "TLS 1.3, PKI, mTLS, certificate lifecycle",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLIFyRwBY_4bTwRX__Zn4-letrtpSj1mzY",
+       "note": "",
+       "title": "Practical TLS - Free Lessons from my SSL Deep Dive training course",
+       "by": "Practical Networking",
+       "thumb": "https://i.ytimg.com/vi/HMoFvRK4HUo/hqdefault.jpg"
+      }
+     ],
+     "id": "network-6"
+    },
+    {
+     "title": "Load balancing, anycast, CDNs, HTTP/2 and HTTP/3",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLQnljOFTspQU6zO0drAYHFtkkyfNJw1IO",
+       "note": "",
+       "title": "HTTP",
+       "by": "Hussein Nasser",
+       "thumb": "https://i.ytimg.com/vi/JhpUch6lWMw/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLQnljOFTspQUhgfvpgfxc-uFlWElKIBr-",
+       "note": "",
+       "title": "HAProxy",
+       "by": "Hussein Nasser",
+       "thumb": "https://i.ytimg.com/vi/qYnA2DFEELw/hqdefault.jpg"
+      }
+     ],
+     "id": "network-7"
+    },
+    {
+     "title": "Linux networking: nftables, tc, netns, VXLAN, WireGuard",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "_WgUwUf1d34",
+       "note": "",
+       "title": "Introduction to Linux Network Namespaces",
+       "by": "David Mahler",
+       "thumb": "https://i.ytimg.com/vi/_WgUwUf1d34/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "EGKhIljDPCw",
+       "note": "",
+       "title": "Tutorial: Firewalls with NFtables - John Hawley, VMware",
+       "by": "The Linux Foundation",
+       "thumb": "https://i.ytimg.com/vi/EGKhIljDPCw/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "3TWJ4XcU4Mg",
+       "note": "",
+       "title": "What does VXLAN do?",
+       "by": "CBT Nuggets",
+       "thumb": "https://i.ytimg.com/vi/3TWJ4XcU4Mg/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "Rrm6PnxtaUw",
+       "note": "Overview only, from a VPN review channel. Do the official WireGuard quick start after it.",
+       "title": "WireGuard Explained: The Fastest, Most Secure VPN Protocol",
+       "by": "vpnMentor",
+       "thumb": "https://i.ytimg.com/vi/Rrm6PnxtaUw/hqdefault.jpg"
+      }
+     ],
+     "weak": true,
+     "id": "network-8"
+    }
+   ]
+  },
+  {
+   "id": "code",
+   "n": 3,
+   "short": "Systems Coding",
+   "title": "Systems Coding",
+   "start": 1,
+   "end": 12,
+   "ongoing": true,
+   "tagline": "C to understand the machine, Go to build infrastructure, Python and Bash to automate, Lua to embed.",
+   "needs": [
+    "systems"
+   ],
+   "done": [
+    "Write a memory-safe C program and prove it with ASan and valgrind",
+    "Ship a tested, released Go CLI with goreleaser and CI",
+    "Write a Kubernetes controller in Go",
+    "Explain a segfault from a core dump in gdb",
+    "Review a teammate's Python or Go PR for correctness and idioms",
+    "Land at least 3 merged PRs in CNCF or major open-source projects"
+   ],
+   "reading": [
+    "Computer Systems: A Programmer's Perspective",
+    "The C Programming Language (K&R)",
+    "Effective C, 2nd ed.",
+    "The Go Programming Language",
+    "Fluent Python, 2nd ed.",
+    "Programming in Lua, 1st ed. (free)",
+    "BashGuide + ShellCheck (free)"
+   ],
+   "security": "Memory-safety bugs, CERT C, govulncheck and pip-audit, secrets in code, native Go fuzzing (go test -fuzz) and libFuzzer.",
+   "certs": [
+    {
+     "name": "Certified Professional in Python Programming 1",
+     "exam": "PCPP-32-1xx",
+     "cost": "$195",
+     "month": 11,
+     "core": false,
+     "why": "Low signal at principal level. Skip unless required."
+    },
+    {
+     "name": "C Programming Language Certified Professional",
+     "exam": "CLP-12-01",
+     "cost": "~$295",
+     "month": 12,
+     "core": false,
+     "why": "Low signal at principal level. The projects prove more."
+    }
+   ],
+   "projects": [
+    {
+     "name": "Event-driven TCP server in C",
+     "proves": "C, sockets, C10k",
+     "level": "Core",
+     "detail": "epoll server handling 10k connections, benchmarked with wrk, checked with ASan."
+    },
+    {
+     "name": "Infra CLI in Go",
+     "proves": "Production Go",
+     "level": "Core",
+     "detail": "A cobra tool you'd use at work, shipped with goreleaser, tests and CI."
+    },
+    {
+     "name": "Build your own Redis",
+     "proves": "Protocols, concurrency",
+     "level": "Core",
+     "detail": "RESP protocol, persistence and replication in Go or C."
+    },
+    {
+     "name": "OpenResty Lua plugin",
+     "proves": "Lua at the edge",
+     "level": "Optional",
+     "detail": "Rate limiter or JWT validator, load-tested."
+    },
+    {
+     "name": "Open-source contributions",
+     "proves": "Real codebases",
+     "level": "Core",
+     "detail": "At least 3 merged PRs to CNCF projects."
+    }
+   ],
+   "topics": [
+    {
+     "title": "C: pointers, memory layout, UB, Makefiles",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "PaPN51Mm5qQ",
+       "note": "Works through K&R.",
+       "title": "Learn C Programming and OOP with Dr. Chuck [feat. classic book by Kernighan and Ritchie]",
+       "by": "freeCodeCamp.org",
+       "thumb": "https://i.ytimg.com/vi/PaPN51Mm5qQ/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "xND0t1pr3KY",
+       "note": "",
+       "title": "C Programming Full Course for free ⚙️",
+       "by": "Bro Code",
+       "thumb": "https://i.ytimg.com/vi/xND0t1pr3KY/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLBlnK6fEyqRgZQ079Wa5H8D1oa43HGRQb",
+       "note": "",
+       "title": "Pointers in C | Chapter 9 | C Programming",
+       "by": "Neso Academy",
+       "thumb": "https://i.ytimg.com/vi/f2i0CnUOniA/hqdefault.jpg"
+      }
+     ],
+     "id": "code-1"
+    },
+    {
+     "title": "C tooling: gdb, valgrind, ASan",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PL9IEJIKnBJjHGWPN_S9NS_Ky1-tC8ZrUI",
+       "note": "",
+       "title": "Debugging C Programs",
+       "by": "Jacob Sorber",
+       "thumb": "https://i.ytimg.com/vi/mfmXcbiRs0E/hqdefault.jpg"
+      }
+     ],
+     "id": "code-2"
+    },
+    {
+     "title": "Systems programming: sockets, epoll/io_uring, threads vs event loops",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "CzS_9n8aXzM",
+       "note": "",
+       "title": "Network Programming in C - Part 1",
+       "by": "Bare Metal Studio",
+       "thumb": "https://i.ytimg.com/vi/CzS_9n8aXzM/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "gntyAFoZp-E",
+       "note": "In C++, but the socket calls are the same.",
+       "title": "C++ Network Programming Part 1: Sockets",
+       "by": "Nicholas Day",
+       "thumb": "https://i.ytimg.com/vi/gntyAFoZp-E/hqdefault.jpg"
+      }
+     ],
+     "weak": true,
+     "id": "code-3"
+    },
+    {
+     "title": "Computer architecture: caches, linking, x86-64 assembly",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLtv4PQFH2yMas_SCMTEaE4eUIWWWiwISj",
+       "note": "CMU 15-213, the course built on CS:APP.",
+       "title": "cmu 15-213/18-213/15-513: Introduction to Computer Systems, Fall 2017",
+       "by": "cs.courses",
+       "thumb": "https://i.ytimg.com/vi/cEFXuhPm65k/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLKK11Ligqitg9MOX3-0tFT1Rmh3uJp7kA",
+       "note": "",
+       "title": "Modern x64 Assembly",
+       "by": "Creel",
+       "thumb": "https://i.ytimg.com/vi/rxsBghsrvpI/hqdefault.jpg"
+      }
+     ],
+     "id": "code-4"
+    },
+    {
+     "title": "Go: interfaces, goroutines, context, testing, pprof",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "un6ZyFkqFKo",
+       "note": "",
+       "title": "Go Programming – Golang Course with Bonus Projects",
+       "by": "freeCodeCamp.org",
+       "thumb": "https://i.ytimg.com/vi/un6ZyFkqFKo/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "f6kdp27TYZs",
+       "note": "",
+       "title": "Google I/O 2012 - Go Concurrency Patterns",
+       "by": "Google for Developers",
+       "thumb": "https://i.ytimg.com/vi/f6kdp27TYZs/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "oV9rvDllKEg",
+       "note": "",
+       "title": "Concurrency is not Parallelism by Rob Pike",
+       "by": "gnbitcom",
+       "thumb": "https://i.ytimg.com/vi/oV9rvDllKEg/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "N3PWzBeLX2M",
+       "note": "",
+       "title": "Profiling and Optimizing Go",
+       "by": "Prashant V",
+       "thumb": "https://i.ytimg.com/vi/N3PWzBeLX2M/hqdefault.jpg"
+      }
+     ],
+     "id": "code-5"
+    },
+    {
+     "title": "Go for infra: client-go, cobra, gRPC, Terraform providers",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "odP153inZUo",
+       "note": "",
+       "title": "Build Your Own Kubernetes Operators with Go and Kubebuilder – Full Course",
+       "by": "freeCodeCamp.org",
+       "thumb": "https://i.ytimg.com/vi/odP153inZUo/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "16qs7LJSyps",
+       "note": "",
+       "title": "[Learn Lab] Create a Terraform provider with the Plugin Framework",
+       "by": "HashiCorp, an IBM Company",
+       "thumb": "https://i.ytimg.com/vi/16qs7LJSyps/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "E5e93PTDLqw",
+       "note": "",
+       "title": "Go - gRPC Crash Course",
+       "by": "Boiddutik",
+       "thumb": "https://i.ytimg.com/vi/E5e93PTDLqw/hqdefault.jpg"
+      }
+     ],
+     "id": "code-6"
+    },
+    {
+     "title": "Python: typing, asyncio, packaging, pytest",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "oAkLSJNr5zY",
+       "note": "",
+       "title": "Python Tutorial: AsyncIO - Complete Guide to Asynchronous Programming with Animations",
+       "by": "Corey Schafer",
+       "thumb": "https://i.ytimg.com/vi/oAkLSJNr5zY/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "cHYq1MRoyI0",
+       "note": "",
+       "title": "Pytest Tutorial – How to Test Python Code",
+       "by": "freeCodeCamp.org",
+       "thumb": "https://i.ytimg.com/vi/cHYq1MRoyI0/hqdefault.jpg"
+      }
+     ],
+     "id": "code-7"
+    },
+    {
+     "title": "Bash: strict mode, traps, shellcheck-clean scripts",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "Sx9zG7wa4FA",
+       "note": "",
+       "title": "The Complete Bash Scripting Course - Full Length Guide to learning the Bash Shell",
+       "by": "You Suck at Programming",
+       "thumb": "https://i.ytimg.com/vi/Sx9zG7wa4FA/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "PNhq_4d-5ek",
+       "note": "",
+       "title": "Bash Scripting Tutorial for Beginners",
+       "by": "TechWorld with Nana",
+       "thumb": "https://i.ytimg.com/vi/PNhq_4d-5ek/hqdefault.jpg"
+      }
+     ],
+     "id": "code-8"
+    },
+    {
+     "title": "Lua: embedding, OpenResty and Nginx scripting",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "1srFmjt1Ib0",
+       "note": "",
+       "title": "Full Lua Programming Crash Course - Beginner to Advanced",
+       "by": "Steve's teacher",
+       "thumb": "https://i.ytimg.com/vi/1srFmjt1Ib0/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "vfYxOMl5LVY",
+       "note": "",
+       "title": "Write Your Own Lua Modules in OpenResty/Nginx Applications",
+       "by": "OpenResty",
+       "thumb": "https://i.ytimg.com/vi/vfYxOMl5LVY/hqdefault.jpg"
+      }
+     ],
+     "id": "code-9"
+    },
+    {
+     "title": "Algorithms and data structures",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLUl4u3cNGP63EdVPNLG3ToM6LaEUuStEY",
+       "note": "Complexity reasoning, and most senior-level interview loops still test it.",
+       "title": "MIT 6.006 Introduction to Algorithms, Spring 2020",
+       "by": "MIT OpenCourseWare",
+       "thumb": "https://i.ytimg.com/vi/ZA-tUyM_y7s/hqdefault.jpg"
+      }
+     ],
+     "added": true,
+     "id": "code-10"
+    }
+   ]
+  },
+  {
+   "id": "cloud",
+   "n": 4,
+   "short": "Multi-Cloud",
+   "title": "Cloud: AWS Deep, Then Broaden",
+   "start": 10,
+   "end": 24,
+   "tagline": "Go deep on AWS, then learn Azure and GCP well enough to separate principles from provider quirks.",
+   "needs": [
+    "network",
+    "code"
+   ],
+   "done": [
+    "Design a landing zone for 50+ accounts and explain every SCP",
+    "Map any AWS service to its Azure/GCP equivalent and list the differences that matter",
+    "Run a cost review that finds 20%+ savings with a concrete plan",
+    "Write reusable Terraform modules with tests",
+    "Defend a cloud-choice decision in front of a client CTO"
+   ],
+   "reading": [
+    "Terraform: Up & Running, 3rd ed.",
+    "AWS Well-Architected Framework (free)",
+    "Azure Architecture Center (free)",
+    "Google Cloud Architecture Center (free)",
+    "AWS Skill Builder (free tier)",
+    "Microsoft Learn: AZ-104 / AZ-305 (free)"
+   ],
+   "security": "Least-privilege IAM across three clouds, SCPs/Azure Policy/Org Policy, workload identity federation over static keys, KMS and Key Vault, central audit logging.",
+   "certs": [
+    {
+     "name": "HashiCorp Terraform Associate",
+     "exam": "004",
+     "cost": "~$70",
+     "month": 10,
+     "core": true,
+     "why": "Cheap, fast win that formalises what you already use."
+    },
+    {
+     "name": "AWS DevOps Engineer – Professional",
+     "exam": "DOP-C02",
+     "cost": "$300",
+     "month": 13,
+     "core": true,
+     "why": "Your most natural professional-level step."
+    },
+    {
+     "name": "Azure Administrator Associate",
+     "exam": "AZ-104",
+     "cost": "$165",
+     "month": 18,
+     "core": true,
+     "why": "Prerequisite for the Azure architect credential."
+    },
+    {
+     "name": "Azure Solutions Architect Expert",
+     "exam": "AZ-305",
+     "cost": "$165",
+     "month": 20,
+     "core": true,
+     "why": "Expert-level Azure design."
+    },
+    {
+     "name": "Google Professional Cloud Architect",
+     "exam": "GCP PCA",
+     "cost": "$200",
+     "month": 24,
+     "core": true,
+     "why": "Case-study design exam. Completes the three-cloud set."
+    }
+   ],
+   "projects": [
+    {
+     "name": "Multi-account AWS landing zone",
+     "proves": "Enterprise AWS",
+     "level": "Core",
+     "detail": "Organizations, SCPs, Identity Center, central logging, GuardDuty and account vending in Terraform."
+    },
+    {
+     "name": "One app, three clouds",
+     "proves": "Provider-agnostic judgement",
+     "level": "Core",
+     "detail": "The same API + Postgres + queue on each cloud, with a comparison write-up."
+    },
+    {
+     "name": "GitOps CI/CD with progressive delivery",
+     "proves": "DevOps Pro for real",
+     "level": "Core",
+     "detail": "Canary deploys with automated rollback on SLO breach."
+    },
+    {
+     "name": "FinOps report",
+     "proves": "Business-aware engineering",
+     "level": "Core",
+     "detail": "Cost analysis with findings, savings and a plan."
+    },
+    {
+     "name": "Custom Terraform provider",
+     "proves": "Go + IaC internals",
+     "level": "Stretch",
+     "detail": "A small tested provider for an internal API."
+    }
+   ],
+   "topics": [
+    {
+     "title": "AWS multi-account: Organizations, Control Tower, SCPs, Identity Center",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLm4CETzI2eWexLG6n3GzI-refzlAWyIUz",
+       "note": "",
+       "title": "AWS Landing Zone Tutorial | Control Tower, Org, SSO, Guardrails & Multi-Account Setup",
+       "by": "KD Cloudtec",
+       "thumb": "https://i.ytimg.com/vi/0eNknZN5Yyc/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "hyEw7dQ9-JE",
+       "note": "70-hour SAP-C02 course. Your free replacement for Cantrill's SA Pro.",
+       "title": "AWS Solutions Architect Professional (SAP-C02) Certification Course – Pass the Exam!",
+       "by": "freeCodeCamp.org",
+       "thumb": "https://i.ytimg.com/vi/hyEw7dQ9-JE/hqdefault.jpg"
+      }
+     ],
+     "id": "cloud-1"
+    },
+    {
+     "title": "IAM evaluation logic, permission boundaries, resource policies",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "YMj33ToS8cI",
+       "note": "",
+       "title": "AWS re:Inforce 2022 - AWS Identity and Access Management (IAM) deep dive (IAM301)",
+       "by": "AWS Events",
+       "thumb": "https://i.ytimg.com/vi/YMj33ToS8cI/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "qsF6Kauh2J4",
+       "note": "",
+       "title": "IAM Policy Evaluation Series: AWS IAM policy language explained | Amazon Web Services",
+       "by": "Amazon Web Services",
+       "thumb": "https://i.ytimg.com/vi/qsF6Kauh2J4/hqdefault.jpg"
+      }
+     ],
+     "id": "cloud-2"
+    },
+    {
+     "title": "CI/CD on AWS, blue/green, canary, automated rollback",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLAJzF4_vJLqo",
+       "note": "Your free replacement for Cantrill's DevOps Pro.",
+       "title": "DOP-C02 AWS Certified DevOps Engineer Professional Ultimate Course",
+       "by": "Cloud Guru Amit",
+       "thumb": "https://i.ytimg.com/vi/PPIt1MsQfWI/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLt1SIbA8guuujn9j9nSXVgJqBPbjKTz-e",
+       "note": "",
+       "title": "AWS Certified DevOps Engineer Professional",
+       "by": "Stephane Maarek",
+       "thumb": "https://i.ytimg.com/vi/N9KbmHhesmE/hqdefault.jpg"
+      }
+     ],
+     "id": "cloud-3"
+    },
+    {
+     "title": "Terraform at scale: modules, state, policy-as-code",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLa8zyTmK-W0A",
+       "note": "",
+       "title": "HashiCorp Certified: Terraform Associate (004) | Full Course",
+       "by": "Cram Exam",
+       "thumb": "https://i.ytimg.com/vi/pYGXOKVf36w/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLl4APkPHzsUXcfBSJDExYR-a4fQiZGmMp",
+       "note": "",
+       "title": "AWS Terraform Full Course - #30daysofAWSTerraform",
+       "by": "Tech Tutorials with Piyush",
+       "thumb": "https://i.ytimg.com/vi/xUtGqC-NXJE/hqdefault.jpg"
+      }
+     ],
+     "id": "cloud-4"
+    },
+    {
+     "title": "Azure: Entra ID, management groups, VNets, AKS, Policy",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLlVtbbG169nH_CJl4wwKBfS1V8nMYr7xL",
+       "note": "",
+       "title": "Nothing But Crams",
+       "by": "John Savill's Technical Training",
+       "thumb": "https://i.ytimg.com/vi/tQp1YkB2Tgs/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLlVtbbG169nHSnaP4ae33yQUI3zcmP5nP",
+       "note": "",
+       "title": "AZ-305 Design Azure Infrastructure Study Playlist",
+       "by": "John Savill's Technical Training",
+       "thumb": "https://i.ytimg.com/vi/vq9LuCM4YP4/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLlVtbbG169nHz2qfLvPsAz9CnnXofhmcA",
+       "note": "",
+       "title": "Microsoft Certification Exam Prep Videos",
+       "by": "John Savill's Technical Training",
+       "thumb": "https://i.ytimg.com/vi/0sHvssrWytM/hqdefault.jpg"
+      }
+     ],
+     "id": "cloud-5"
+    },
+    {
+     "title": "GCP: projects/folders, VPC-SC, GKE, IAM, Cloud Build",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "u43gJJrVa1I",
+       "note": "",
+       "title": "Professional Cloud Architect Certification Course – Pass the Exam!",
+       "by": "freeCodeCamp.org",
+       "thumb": "https://i.ytimg.com/vi/u43gJJrVa1I/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLdpzxOOAlwvL4VhhpTiIUr-i_djrXGB22",
+       "note": "",
+       "title": "GCP Zero to Hero in 20 Days",
+       "by": "Abhishek.Veeramalla",
+       "thumb": "https://i.ytimg.com/vi/N5rXROueKhw/hqdefault.jpg"
+      }
+     ],
+     "id": "cloud-6"
+    },
+    {
+     "title": "Well-Architected: reliability, cost, security, sustainability",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "hyEw7dQ9-JE",
+       "note": "Use the design and cost sections, alongside the free AWS whitepapers.",
+       "title": "AWS Solutions Architect Professional (SAP-C02) Certification Course – Pass the Exam!",
+       "by": "freeCodeCamp.org",
+       "thumb": "https://i.ytimg.com/vi/hyEw7dQ9-JE/hqdefault.jpg"
+      }
+     ],
+     "id": "cloud-7"
+    },
+    {
+     "title": "FinOps: tagging, commitments, unit economics",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLhr1KZpdzukcxUPo44KHv2lkRG4NToQXJ",
+       "note": "",
+       "title": "AWS Cost Optimisation Series",
+       "by": "Amazon Web Services",
+       "thumb": "https://i.ytimg.com/vi/ZBxE6JaJQ5Y/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLTyrc6mz8dg8z6nli5F-F-fHBDnyVVxFZ",
+       "note": "",
+       "title": "CLOUD FinOps",
+       "by": "knowledgeindia - LearnCloud",
+       "thumb": "https://i.ytimg.com/vi/p238738_GKA/hqdefault.jpg"
+      }
+     ],
+     "id": "cloud-8"
+    }
+   ]
+  },
+  {
+   "id": "k8s",
+   "n": 5,
+   "short": "Kubernetes",
+   "title": "Kubernetes Depth",
+   "start": 12,
+   "end": 16,
+   "tagline": "You've passed CKA. Now learn the internals well enough to extend the platform.",
+   "needs": [
+    "systems",
+    "network",
+    "code"
+   ],
+   "done": [
+    "Bootstrap a cluster by hand with no kubeadm",
+    "Write and operate a production-grade operator",
+    "Explain packet flow under Cilium in eBPF terms",
+    "Design a multi-tenant platform with security and cost isolation",
+    "Pass CKS on the first attempt"
+   ],
+   "reading": [
+    "Kubernetes The Hard Way (free)",
+    "Programming Kubernetes",
+    "The Kubebuilder Book (free)",
+    "Production Kubernetes",
+    "Container Security (Rice)",
+    "Hacking Kubernetes",
+    "Isovalent / Cilium labs (free)"
+   ],
+   "security": "RBAC least privilege, Pod Security Standards, default-deny network policies, cosign and admission verification, Falco/Tetragon, encryption at rest.",
+   "certs": [
+    {
+     "name": "Certified Kubernetes Security Specialist",
+     "exam": "CKS",
+     "cost": "$445",
+     "month": 16,
+     "core": true,
+     "why": "Requires an active CKA when you schedule it, so check your expiry date."
+    },
+    {
+     "name": "Certified Kubernetes Application Developer",
+     "exam": "CKAD",
+     "cost": "$445",
+     "month": 14,
+     "core": false,
+     "why": "Only if you want the Kubestronaut badge."
+    }
+   ],
+   "projects": [
+    {
+     "name": "Kubernetes the Hard Way + write-up",
+     "proves": "Control plane internals",
+     "level": "Core",
+     "detail": "What each component does and how they authenticate."
+    },
+    {
+     "name": "Production operator",
+     "proves": "Extending Kubernetes",
+     "level": "Core",
+     "detail": "A kubebuilder operator with tests, metrics and a Helm chart."
+    },
+    {
+     "name": "Secure multi-tenant platform",
+     "proves": "Platform architecture",
+     "level": "Core",
+     "detail": "Cilium, Kyverno, PSS restricted, Falco, Argo CD, quotas and a threat model."
+    },
+    {
+     "name": "Admission webhook in Go",
+     "proves": "API machinery",
+     "level": "Optional",
+     "detail": "Validating/mutating webhook with cert-manager TLS."
+    }
+   ],
+   "topics": [
+    {
+     "title": "Control plane internals: API server, etcd, scheduler",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "ryeINNfVOi8",
+       "note": "",
+       "title": "Life of a Kubernetes API Request by Daniel Smith, Google",
+       "by": "CNCF [Cloud Native Computing Foundation]",
+       "thumb": "https://i.ytimg.com/vi/ryeINNfVOi8/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "Z-Pxl84WNGo",
+       "note": "",
+       "title": "Kubernetes The Hard Way | Full Walkthrough",
+       "by": "CYBERWOX",
+       "thumb": "https://i.ytimg.com/vi/Z-Pxl84WNGo/hqdefault.jpg"
+      }
+     ],
+     "id": "k8s-1"
+    },
+    {
+     "title": "Reconciliation, CRDs, operators, admission webhooks",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "odP153inZUo",
+       "note": "",
+       "title": "Build Your Own Kubernetes Operators with Go and Kubebuilder – Full Course",
+       "by": "freeCodeCamp.org",
+       "thumb": "https://i.ytimg.com/vi/odP153inZUo/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "sF2Z8IDshRA",
+       "note": "",
+       "title": "How to write your own Kubernetes Operator in #golang (using Kubernetes controller-runtime library)",
+       "by": "Edward Viaene",
+       "thumb": "https://i.ytimg.com/vi/sF2Z8IDshRA/hqdefault.jpg"
+      }
+     ],
+     "id": "k8s-2"
+    },
+    {
+     "title": "CNI deep dive: Cilium/eBPF, network policy, Gateway API",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLDg_GiBbAx-m6W4UfeVxFNT5vtPDvel4a",
+       "note": "",
+       "title": "eCHO Recaps: Deploying Cilium",
+       "by": "eBPF & Cilium Community",
+       "thumb": "https://i.ytimg.com/vi/ni0Uw4WLHYo/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLDg_GiBbAx-nD4ps3RpgRxc3oum6t51yB",
+       "note": "",
+       "title": "eCHO Recaps: Cilium Network Policy",
+       "by": "eBPF & Cilium Community",
+       "thumb": "https://i.ytimg.com/vi/2XisJm0e8fc/hqdefault.jpg"
+      }
+     ],
+     "id": "k8s-3"
+    },
+    {
+     "title": "Storage: CSI, StatefulSets, databases on Kubernetes",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "vpcTC2C4qZ8",
+       "note": "",
+       "title": "Webinar: Kubernetes Storage In Action",
+       "by": "CNCF [Cloud Native Computing Foundation]",
+       "thumb": "https://i.ytimg.com/vi/vpcTC2C4qZ8/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "0swOh5C3OVM",
+       "note": "",
+       "title": "Kubernetes Volumes explained | Persistent Volume, Persistent Volume Claim & Storage Class",
+       "by": "TechWorld with Nana",
+       "thumb": "https://i.ytimg.com/vi/0swOh5C3OVM/hqdefault.jpg"
+      }
+     ],
+     "id": "k8s-4"
+    },
+    {
+     "title": "Multi-tenancy, Cluster API, GitOps at scale",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "O0nDzo_8NUk",
+       "note": "",
+       "title": "Running a multi-tenant platform on a managed Kubernetes cluster",
+       "by": "CNCF [Cloud Native Computing Foundation]",
+       "thumb": "https://i.ytimg.com/vi/O0nDzo_8NUk/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "Pe3Z4dgtNuo",
+       "note": "",
+       "title": "Cluster API and GitOps: the key to Kubernetes lifecycle management",
+       "by": "CNCF [Cloud Native Computing Foundation]",
+       "thumb": "https://i.ytimg.com/vi/Pe3Z4dgtNuo/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLozcbFx8FoPHUHoKfuSrkMO0ulZD-CHHu",
+       "note": "",
+       "title": "Argo CD Lightning Course",
+       "by": "mkdev",
+       "thumb": "https://i.ytimg.com/vi/PAv-mqA4cfI/hqdefault.jpg"
+      }
+     ],
+     "id": "k8s-5"
+    },
+    {
+     "title": "Autoscaling: HPA, VPA, KEDA, Karpenter",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "HQY2jgSN6pA",
+       "note": "",
+       "title": "Scaling Explained Through Kubernetes HPA, VPA, KEDA & Cluster Autoscaler",
+       "by": "DevOps & AI Toolkit",
+       "thumb": "https://i.ytimg.com/vi/HQY2jgSN6pA/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "hsJ2qtwoWZw",
+       "note": "",
+       "title": "Kubernetes Autoscaling: HPA vs. VPA vs. Keda vs. CA vs. Karpenter vs. Fargate",
+       "by": "Anton Putra",
+       "thumb": "https://i.ytimg.com/vi/hsJ2qtwoWZw/hqdefault.jpg"
+      }
+     ],
+     "id": "k8s-6"
+    },
+    {
+     "title": "Cluster security: RBAC, PSS, supply chain, runtime",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLn_q0z5f51UdxZGb8AU36Sy3TKYoQwdHu",
+       "note": "Your free replacement for KodeKloud CKS.",
+       "title": "Certified Kubernetes Security Specialist (CKS) Crash Course",
+       "by": "Tech With Hassan",
+       "thumb": "https://i.ytimg.com/vi/smoXh0_g1rQ/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "x_klpjAilMs",
+       "note": "",
+       "title": "Falco for Kubernetes Security | CKS Certification Scenarios Explained",
+       "by": "Kubesimplify",
+       "thumb": "https://i.ytimg.com/vi/x_klpjAilMs/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "soTg-b-Uqkw",
+       "note": "",
+       "title": "Tutorial: Cosign Signature, Attestation, Trivy Reports and Kyverno Policies",
+       "by": "Anais Urlichs",
+       "thumb": "https://i.ytimg.com/vi/soTg-b-Uqkw/hqdefault.jpg"
+      }
+     ],
+     "id": "k8s-7"
+    },
+    {
+     "title": "Platform engineering: IDPs and golden paths",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLyicRj904Z9_50dH2eD5prLZ8b9A-fdgt",
+       "note": "",
+       "title": "Internal Developer Platform (IDP)",
+       "by": "DevOps & AI Toolkit",
+       "thumb": "https://i.ytimg.com/vi/j5i00z3QXyU/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLR74Ng-6aEfCy63aiNYN8maQqLJaCSyyq",
+       "note": "",
+       "title": "Advanced Learning Path | PlatformCon 2024",
+       "by": "Platform Engineering",
+       "thumb": "https://i.ytimg.com/vi/sk0mQaQ-PYc/hqdefault.jpg"
+      }
+     ],
+     "id": "k8s-8"
+    },
+    {
+     "title": "AI infrastructure: GPUs, LLM serving, inference on Kubernetes",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "hBzUokVYQkI",
+       "note": "",
+       "title": "AI Infrastructure Explained (GPUs, vLLM, and LLM-D)",
+       "by": "KodeKloud",
+       "thumb": "https://i.ytimg.com/vi/hBzUokVYQkI/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "4o2amJxMHUc",
+       "note": "",
+       "title": "An Open Source AI Compute Stack: Kubernetes + Ray + PyTorch + VLLM - Robert Nishihara, Anyscale",
+       "by": "CNCF [Cloud Native Computing Foundation]",
+       "thumb": "https://i.ytimg.com/vi/4o2amJxMHUc/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "t0iJGEG0IXk",
+       "note": "",
+       "title": "vLLM on Kubernetes in Production",
+       "by": "Kubesimplify",
+       "thumb": "https://i.ytimg.com/vi/t0iJGEG0IXk/hqdefault.jpg"
+      }
+     ],
+     "added": true,
+     "id": "k8s-9"
+    }
+   ]
+  },
+  {
+   "id": "security",
+   "n": 6,
+   "short": "Security",
+   "title": "Security Across the Stack",
+   "start": 16,
+   "end": 28,
+   "tagline": "Think like an attacker, build like a defender, and make security the default.",
+   "needs": [
+    "cloud",
+    "k8s"
+   ],
+   "done": [
+    "Lead a threat-modelling session and produce actionable mitigations",
+    "Exploit and then fix the flaws.cloud and CloudGoat scenarios",
+    "Build a detection pipeline that alerts on ATT&CK techniques",
+    "Implement SLSA level 3 provenance for a build pipeline",
+    "Write an incident runbook someone else can follow"
+   ],
+   "reading": [
+    "Threat Modeling (Shostack)",
+    "Security Engineering, 3rd ed. (free)",
+    "Practical Cloud Security, 2nd ed.",
+    "flaws.cloud, CloudGoat, Kubernetes Goat (free labs)",
+    "MITRE ATT&CK, SLSA, Sigstore (free)"
+   ],
+   "security": "This is the security phase. Feed threat models, runbooks and detections back into the Phase 4 landing zone and Phase 5 platform.",
+   "certs": [
+    {
+     "name": "AWS Certified Security – Specialty",
+     "exam": "SCS",
+     "cost": "$300",
+     "month": 22,
+     "core": true,
+     "why": "Detection, IR, IAM, data and infrastructure security."
+    },
+    {
+     "name": "Microsoft Cloud and AI Security Engineer Associate",
+     "exam": "SC-500",
+     "cost": "$165",
+     "month": 28,
+     "core": true,
+     "why": "Replaced AZ-500, retired Aug 31, 2026."
+    },
+    {
+     "name": "HTB Certified Penetration Testing Specialist",
+     "exam": "CPTS",
+     "cost": "~$210",
+     "month": 34,
+     "core": false,
+     "why": "10-day practical exam. Builds attacker intuition."
+    }
+   ],
+   "projects": [
+    {
+     "name": "Threat model your own SaaS",
+     "proves": "Applied threat modelling",
+     "level": "Core",
+     "detail": "Full STRIDE model with mitigations tracked."
+    },
+    {
+     "name": "Cloud detection pipeline",
+     "proves": "Detection engineering",
+     "level": "Core",
+     "detail": "CloudTrail/GuardDuty to a SIEM, with Sigma rules and auto-remediation."
+    },
+    {
+     "name": "SLSA L3 build pipeline",
+     "proves": "Supply-chain security",
+     "level": "Core",
+     "detail": "Signed provenance, cosign images, SBOMs, admission verification."
+    },
+    {
+     "name": "Attack-then-defend write-ups",
+     "proves": "Attacker mindset",
+     "level": "Core",
+     "detail": "CloudGoat and Kubernetes Goat walkthroughs with the fix for each."
+    },
+    {
+     "name": "AD attack lab",
+     "proves": "Enterprise security",
+     "level": "Optional",
+     "detail": "Kerberoasting and friends, then the hardening that stops them."
+    }
+   ],
+   "topics": [
+    {
+     "title": "Threat modelling: STRIDE, attack trees, data-flow diagrams",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLCVhBqLDKoOOZqKt74QI4pbDUnXSQo0nf",
+       "note": "From the author of your primary book.",
+       "title": "World's Shortest Threat Modeling Course",
+       "by": "Adam Shostack",
+       "thumb": "https://i.ytimg.com/vi/2pvprvsr1lo/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PL_mcQ3_IEM7JvNMY0S79mUeG0FbDdcY9B",
+       "note": "",
+       "title": "Threat Modeling | Certified Threat Modeling Professional (CTMP) | Practical DevSecOps",
+       "by": "Practical DevSecOps",
+       "thumb": "https://i.ytimg.com/vi/Z0gUkPToT7Y/hqdefault.jpg"
+      }
+     ],
+     "id": "security-1"
+    },
+    {
+     "title": "Cloud security architecture: identity, preventive vs detective",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PL2yQDdvlhXf9XkXzO5bXvtMaio6gAcdmN",
+       "note": "",
+       "title": "AWS re:Inforce 2025",
+       "by": "AWS Events",
+       "thumb": "https://i.ytimg.com/vi/3Qj7rypkzGg/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLBgogxgQVM9tEGqcLF7DL_Q0sst5RvPLn",
+       "note": "",
+       "title": "Google Cloud Security Showcase",
+       "by": "Google Cloud",
+       "thumb": "https://i.ytimg.com/vi/IkZpqskFh4A/hqdefault.jpg"
+      }
+     ],
+     "id": "security-2"
+    },
+    {
+     "title": "AWS security: GuardDuty, Security Hub, Macie, Access Analyzer, KMS",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLXVUBNOa2d7YDnQF3Lb4Z2UccE59BmoZ3",
+       "note": "",
+       "title": "AWS Certified Security - Specialty - SCS-C02",
+       "by": "Network Intelligence",
+       "thumb": "https://i.ytimg.com/vi/5xxZXcXQ2CY/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLt1SIbA8guutSqjAWsetS4qqxg1Zl2_n1",
+       "note": "",
+       "title": "AWS Certified Security Specialty",
+       "by": "Stephane Maarek",
+       "thumb": "https://i.ytimg.com/vi/BL-nmz6GY7c/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "WXl4gW0znVc",
+       "note": "",
+       "title": "AWS Hands-on GuardDuty Tutorial",
+       "by": "Loi Liang Yang",
+       "thumb": "https://i.ytimg.com/vi/WXl4gW0znVc/hqdefault.jpg"
+      }
+     ],
+     "id": "security-3"
+    },
+    {
+     "title": "Microsoft security: Defender for Cloud, Sentinel, Entra ID",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLUYir_dGcUeA",
+       "note": "New SC-500 course. Check it against the exam objectives.",
+       "title": "Microsoft SC-500 Full Course (Cloud and AI Security Engineer)",
+       "by": "CertCrush",
+       "thumb": "https://i.ytimg.com/vi/axzqmBZhsGI/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLlVtbbG169nHw9T1L_CiLxC-DTwKu-BZG",
+       "note": "Covers the retired AZ-500, still useful for the fundamentals.",
+       "title": "AZ-500 Study Playlist",
+       "by": "John Savill's Technical Training",
+       "thumb": "https://i.ytimg.com/vi/6vISzj-z8k4/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PL3ZTgFEc7Lyska6WLWBzc8sob-kYA2jPj",
+       "note": "",
+       "title": "Microsoft Sentinel is now in Defender",
+       "by": "Microsoft Security",
+       "thumb": "https://i.ytimg.com/vi/Hgcz87XdJx0/hqdefault.jpg"
+      }
+     ],
+     "id": "security-4"
+    },
+    {
+     "title": "Detection engineering: MITRE ATT&CK, Sigma, log pipelines",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLoXmlqAfiIESNp3pL39nEEgg3BzEjfk7-",
+       "note": "",
+       "title": "Detection-Engineering",
+       "by": "Network Security With Me",
+       "thumb": "https://i.ytimg.com/vi/cVhrULPXOVU/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLqM63j87R5p57YgaHGPoX-8pmMAwc9MFc",
+       "note": "",
+       "title": "Cyber Threat Intelligence & Threat Hunting Course Track",
+       "by": "Motasem Hamdan ",
+       "thumb": "https://i.ytimg.com/vi/OZ80zXwTh0g/hqdefault.jpg"
+      }
+     ],
+     "id": "security-5"
+    },
+    {
+     "title": "Supply chain: SLSA, Sigstore, SBOMs, provenance",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLM6mY5TOhY1E1rqcBR93goCd0DaAiyU8f",
+       "note": "",
+       "title": "Sigstore Community Talks",
+       "by": "Sigstore",
+       "thumb": "https://i.ytimg.com/vi/hsHeZRFj5jc/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLbzoR-pLrL6qtZwvIF0O1-JBL5r1wM7JG",
+       "note": "",
+       "title": "SupplyChainSecurityCon @ OSS NA 2023",
+       "by": "The Linux Foundation",
+       "thumb": "https://i.ytimg.com/vi/N6ANFkxr1Kc/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "nF15vzo5Gts",
+       "note": "",
+       "title": "Creating an SBOM Attestation with Trivy and Cosign from Sigstore",
+       "by": "Aqua Security Open Source",
+       "thumb": "https://i.ytimg.com/vi/nF15vzo5Gts/hqdefault.jpg"
+      }
+     ],
+     "id": "security-6"
+    },
+    {
+     "title": "Offensive basics: recon, privesc, AD attacks, cloud pentesting",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLLKT__MCUeixqHJ1TRqrHsEd6_EdEvo47",
+       "note": "",
+       "title": "Full-Length Hacking Courses",
+       "by": "The Cyber Mentors",
+       "thumb": "https://i.ytimg.com/vi/3FNYvj2U0HM/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "VXxH4n684HE",
+       "note": "",
+       "title": "Hacking Active Directory for Beginners (over 5 hours of content!)",
+       "by": "The Cyber Mentors",
+       "thumb": "https://i.ytimg.com/vi/VXxH4n684HE/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLDqMNdDvMsRn_ocTwQJR_eXMnv6K2I8eV",
+       "note": "",
+       "title": "Cloud Security",
+       "by": "CYBERWOX",
+       "thumb": "https://i.ytimg.com/vi/0_HhBf3WtDw/hqdefault.jpg"
+      }
+     ],
+     "id": "security-7"
+    },
+    {
+     "title": "Incident response: forensics, containment, postmortems",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLfouvuAjspTqiZ74IXtKscwVhMM4fdkqB",
+       "note": "",
+       "title": "Incident Response",
+       "by": "SANS Digital Forensics and Incident Response",
+       "thumb": "https://i.ytimg.com/vi/ai_7Fkv6igw/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLjWEV7pmvSa4yvhzNsCjOJovOn1LLyBXB",
+       "note": "",
+       "title": "BlackPerl DFIR  || INCIDENT RESPONSE TRAINING || Full Course",
+       "by": "BlackPerl",
+       "thumb": "https://i.ytimg.com/vi/UdUGortZN4o/hqdefault.jpg"
+      }
+     ],
+     "id": "security-8"
+    }
+   ],
+   "habit": true
+  },
+  {
+   "id": "data",
+   "n": 7,
+   "short": "Data & SRE",
+   "title": "Databases, System Design & Reliability",
+   "start": 20,
+   "end": 30,
+   "tagline": "Data outlives code. Learn how storage engines, consensus and SLOs actually work.",
+   "needs": [
+    "code",
+    "k8s"
+   ],
+   "done": [
+    "Choose a database for a workload and defend it on consistency, scale and operability",
+    "Run a zero-downtime Postgres major-version migration",
+    "Implement Raft and pass the MIT 6.5840 test suite",
+    "Define SLOs and wire up multi-window burn-rate alerts",
+    "Run a chaos game day and turn the findings into fixes"
+   ],
+   "reading": [
+    "Designing Data-Intensive Applications",
+    "Database Internals",
+    "Google SRE books (free)",
+    "Observability Engineering",
+    "Release It!, 2nd ed.",
+    "Use The Index, Luke (free)",
+    "System Design Primer (free)"
+   ],
+   "security": "Encryption at rest and in transit, row-level security, Vault dynamic secrets, immutable backups, PII handling and data residency.",
+   "certs": [
+    {
+     "name": "Prometheus Certified Associate",
+     "exam": "Prom PCA",
+     "cost": "$250",
+     "month": 26,
+     "core": true,
+     "why": "PromQL, instrumentation and alerting."
+    },
+    {
+     "name": "OpenTelemetry Certified Associate",
+     "exam": "OTCA",
+     "cost": "$250",
+     "month": 27,
+     "core": false,
+     "why": "Pairs with Prom PCA."
+    },
+    {
+     "name": "EDB PostgreSQL Certification",
+     "exam": "Assoc./Pro",
+     "cost": "varies",
+     "month": 30,
+     "core": false,
+     "why": "The most recognised Postgres credential."
+    }
+   ],
+   "projects": [
+    {
+     "name": "Raft key-value store",
+     "proves": "Distributed consensus",
+     "level": "Core",
+     "detail": "MIT 6.5840 labs in Go, all tests passing."
+    },
+    {
+     "name": "Postgres HA on Kubernetes",
+     "proves": "Stateful operations",
+     "level": "Core",
+     "detail": "Patroni or CloudNativePG, PITR, failover drills, zero-downtime upgrade."
+    },
+    {
+     "name": "SLO framework",
+     "proves": "Reliability engineering",
+     "level": "Core",
+     "detail": "Recording rules, burn-rate alerts, an error-budget policy, dashboards."
+    },
+    {
+     "name": "Chaos game day",
+     "proves": "Resilience validation",
+     "level": "Core",
+     "detail": "Chaos Mesh and k6 on your Phase 5 platform, with a findings report."
+    },
+    {
+     "name": "Ten design docs",
+     "proves": "Design communication",
+     "level": "Core",
+     "detail": "Classic systems with trade-off tables. This is your system design proof."
+    }
+   ],
+   "topics": [
+    {
+     "title": "Storage engines: B-trees vs LSM, WAL, MVCC, indexing",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLSE8ODhjZXjYDBpQnSymaectKjxCy6BYq",
+       "note": "Primary course, with the BusTub projects.",
+       "title": "CMU Intro to Database Systems (15-445/645 - Fall 2024)",
+       "by": "CMU Database Group",
+       "thumb": "https://i.ytimg.com/vi/otE2WvX3XdQ/hqdefault.jpg"
+      }
+     ],
+     "id": "data-1"
+    },
+    {
+     "title": "PostgreSQL: planner, replication, partitioning, Patroni, PITR",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "Q56kljmIN14",
+       "note": "",
+       "title": "PostgreSQL Internal Architecture Explained",
+       "by": "Hussein Nasser",
+       "thumb": "https://i.ytimg.com/vi/Q56kljmIN14/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "meU2qKRzkCM",
+       "note": "",
+       "title": "A Detailed Understanding of MVCC and Autovacuum Internals in PostgreSQL 14 - Avinash Vallarapu",
+       "by": "Percona",
+       "thumb": "https://i.ytimg.com/vi/meU2qKRzkCM/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "RHwglGf_z40",
+       "note": "",
+       "title": "High Availability PostgreSQL with Patroni – Full Setup Tutorial",
+       "by": "Techno Tim",
+       "thumb": "https://i.ytimg.com/vi/RHwglGf_z40/hqdefault.jpg"
+      }
+     ],
+     "id": "data-2"
+    },
+    {
+     "title": "Distributed systems: replication, Raft, clocks, CAP/PACELC",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLrw6a1wE39_tb2fErI4-WkMbsvGQk9_UB",
+       "note": "Official lectures for the Raft labs.",
+       "title": "MIT 6.824 Distributed Systems (Spring 2020)",
+       "by": "MIT 6.824: Distributed Systems",
+       "thumb": "https://i.ytimg.com/vi/cQP8WApzIQQ/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLeKd45zvjcDFUEv_ohr_HdUFe97RItdiB",
+       "note": "By the author of DDIA.",
+       "title": "Distributed Systems lecture series",
+       "by": "Martin Kleppmann",
+       "thumb": "https://i.ytimg.com/vi/UEAMfLPZZhE/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "vYp4LYbnnW8",
+       "note": "",
+       "title": "Designing for Understandability: The Raft Consensus Algorithm",
+       "by": "Diego Ongaro",
+       "thumb": "https://i.ytimg.com/vi/vYp4LYbnnW8/hqdefault.jpg"
+      }
+     ],
+     "id": "data-3"
+    },
+    {
+     "title": "Caches and queues: Redis, Kafka semantics, backpressure",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLa7VYi0yPIH0KbnJQcMv5N9iW8HkZHztH",
+       "note": "",
+       "title": "Apache Kafka Tutorials | Kafka 101",
+       "by": "Confluent, an IBM Company",
+       "thumb": "https://i.ytimg.com/vi/j4bqyAMMb7o/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "fmT5nlEkl3U",
+       "note": "",
+       "title": "Redis Deep Dive w/ a Ex-Meta Senior Manager",
+       "by": "Hello Interview",
+       "thumb": "https://i.ytimg.com/vi/fmT5nlEkl3U/hqdefault.jpg"
+      }
+     ],
+     "id": "data-4"
+    },
+    {
+     "title": "System design: estimation, trade-offs, failure modes",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PL5q3E8eRUieWtYLmRU3z94-vGRcwKr9tM",
+       "note": "",
+       "title": "System Design Walkthroughs",
+       "by": "Hello Interview",
+       "thumb": "https://i.ytimg.com/vi/fhdPyoO6aXI/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLjTveVh7FakLdTmm42TMxbN8PvVn5g4KJ",
+       "note": "",
+       "title": "Systems Design 2.0",
+       "by": "Jordan has no life",
+       "thumb": "https://i.ytimg.com/vi/bwt09KXDH94/hqdefault.jpg"
+      }
+     ],
+     "id": "data-5"
+    },
+    {
+     "title": "SRE: SLIs, SLOs, error budgets, burn-rate alerts",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "Akri1BlGp10",
+       "note": "",
+       "title": "SLO vs SLI vs SLA vs Error Budget | Google SRE in Plain English",
+       "by": "Tech Tutorials with Piyush",
+       "thumb": "https://i.ytimg.com/vi/Akri1BlGp10/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PL6VBQyIvTlRg3t_sl0dIcmh_X2qLmpHh4",
+       "note": "",
+       "title": "Site Reliability Engineering",
+       "by": "Is it Observable",
+       "thumb": "https://i.ytimg.com/vi/eDu3oRJekuk/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "Yy3xruHn2G0",
+       "note": "",
+       "title": "SLOs, Error Budgets & Burn Rate Alerts Explained | Observability from Scratch, Lesson 6 (Final)",
+       "by": "Phani Thaticharla",
+       "thumb": "https://i.ytimg.com/vi/Yy3xruHn2G0/hqdefault.jpg"
+      }
+     ],
+     "weak": true,
+     "id": "data-6"
+    },
+    {
+     "title": "Observability: Prometheus, logs, OpenTelemetry, profiling",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "zZcxdWJ_tRc",
+       "note": "",
+       "title": "Prometheus FULL Course: Docker/K8s, PromQL, Grafana & MORE!",
+       "by": "Rayan Slim",
+       "thumb": "https://i.ytimg.com/vi/zZcxdWJ_tRc/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "jhS_VD247Qo",
+       "note": "",
+       "title": "Logging & Observability Full Course (Prometheus, Grafana, OpenTelemetry)",
+       "by": "Boot dev",
+       "thumb": "https://i.ytimg.com/vi/jhS_VD247Qo/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLNxnp_rzlqf6z1cC0IkIwp6yjsBboX945",
+       "note": "",
+       "title": "OpenTelemetry Bootcamp Tutorials | Complete Course",
+       "by": "Aspecto",
+       "thumb": "https://i.ytimg.com/vi/UEwkn0iHDzA/hqdefault.jpg"
+      }
+     ],
+     "id": "data-7"
+    },
+    {
+     "title": "Resilience: chaos, load testing, capacity, DR",
+     "videos": [
+      {
+       "kind": "playlist",
+       "id": "PLJ9A48W0kpRKyBBmwOz6oSn4s3A90HHCj",
+       "note": "",
+       "title": "Learn Chaos Engineering Series",
+       "by": "QAInsights",
+       "thumb": "https://i.ytimg.com/vi/8qib94Gh1ws/hqdefault.jpg"
+      },
+      {
+       "kind": "playlist",
+       "id": "PLp-O8ZgCU6wvF4ZiMvnL_foSDEbgGpzXI",
+       "note": "",
+       "title": "Performance testing using Grafana k6 (Zero to Hero)",
+       "by": "ProSDETwithAJ",
+       "thumb": "https://i.ytimg.com/vi/th4JGYkz4TM/hqdefault.jpg"
+      }
+     ],
+     "id": "data-8"
+    }
+   ]
+  },
+  {
+   "id": "principal",
+   "n": 8,
+   "short": "Principal Skills",
+   "title": "Principal-Level Skills",
+   "start": 26,
+   "end": 36,
+   "habit": true,
+   "tagline": "Judgement, writing, influence and making others better.",
+   "needs": [
+    "cloud",
+    "security",
+    "data"
+   ],
+   "done": [
+    "Show a body of ADRs and design docs other engineers reference",
+    "Lead cross-team technical initiatives end to end",
+    "Point to people you've mentored into senior roles",
+    "Give at least one conference talk and publish regularly",
+    "Translate technical strategy into business outcomes for executives"
+   ],
+   "reading": [
+    "The Staff Engineer's Path (Reilly)",
+    "StaffEng (free)",
+    "Fundamentals of Software Architecture",
+    "Software Architecture: The Hard Parts",
+    "Design Docs at Google (free)",
+    "ADR GitHub organisation (free)",
+    "Thinking in Systems (Meadows)"
+   ],
+   "security": "Own security outcomes for the whole architecture: review gates in design docs, threat models attached to ADRs, risk explained in business terms.",
+   "certs": [
+    {
+     "name": "AWS Solutions Architect – Professional",
+     "exam": "SAP-C02",
+     "cost": "$300",
+     "month": 32,
+     "core": true,
+     "why": "The capstone architecture exam."
+    }
+   ],
+   "projects": [
+    {
+     "name": "ADR log",
+     "proves": "Decision-making",
+     "level": "Core",
+     "detail": "At least 20 ADRs with context, options, decision and consequences."
+    },
+    {
+     "name": "Technical blog",
+     "proves": "Clear writing",
+     "level": "Core",
+     "detail": "One post per phase, plus deep dives."
+    },
+    {
+     "name": "Conference talk",
+     "proves": "Public influence",
+     "level": "Core",
+     "detail": "A meetup, DevOpsDays or KubeCon talk from your strongest project."
+    },
+    {
+     "name": "Mentorship",
+     "proves": "Force multiplication",
+     "level": "Core",
+     "detail": "Mentor 2–3 engineers through structured goals."
+    },
+    {
+     "name": "Capstone architecture",
+     "proves": "End-to-end judgement",
+     "level": "Core",
+     "detail": "A multi-region, multi-cloud platform combining all eight phases, peer reviewed."
+    }
+   ],
+   "topics": [
+    {
+     "title": "Architecture: trade-offs, characteristics, evolutionary design",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "rIgTE9aDVj4",
+       "note": "",
+       "title": "Software Architecture: The Hard Parts • Neal Ford & Mark Richards • GOTO 2023",
+       "by": "GOTO Conferences",
+       "thumb": "https://i.ytimg.com/vi/rIgTE9aDVj4/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "Q6RfMmMwhvM",
+       "note": "",
+       "title": "Software Architecture: The Hard Parts - Neal Ford",
+       "by": "Developer Summit",
+       "thumb": "https://i.ytimg.com/vi/Q6RfMmMwhvM/hqdefault.jpg"
+      }
+     ],
+     "id": "principal-1"
+    },
+    {
+     "title": "Decision records: ADRs, RFCs, design docs",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "6H6zfCNeqek",
+       "note": "",
+       "title": "Architecture Decision Records (ADR) as a LOG that answers \"WHY?\"",
+       "by": "CodeOpinion",
+       "thumb": "https://i.ytimg.com/vi/6H6zfCNeqek/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "bgHL41e7vgI",
+       "note": "",
+       "title": "What Is A Design Doc In Software Engineering? (full example)",
+       "by": "Clément Mihailescu",
+       "thumb": "https://i.ytimg.com/vi/bgHL41e7vgI/hqdefault.jpg"
+      }
+     ],
+     "id": "principal-2"
+    },
+    {
+     "title": "Technical strategy: roadmaps, build vs buy",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "UZrTl16hZdk",
+       "note": "",
+       "title": "LSE Events | Prof. Richard Rumelt | Good Strategy/Bad Strategy: the difference and why it matters",
+       "by": "LSE",
+       "thumb": "https://i.ytimg.com/vi/UZrTl16hZdk/hqdefault.jpg"
+      }
+     ],
+     "weak": true,
+     "id": "principal-3"
+    },
+    {
+     "title": "Influence without authority and disagreeing well",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "KClAPipnKqw",
+       "note": "",
+       "title": "Technical leadership and glue work - Tanya Reilly | #LeadDevNewYork",
+       "by": "LeadDev",
+       "thumb": "https://i.ytimg.com/vi/KClAPipnKqw/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "QfzVCLP7JBo",
+       "note": "",
+       "title": "LeadDev Bookmarked - The Staff Engineer’s Path: Tanya Reilly in conversation",
+       "by": "LeadDev",
+       "thumb": "https://i.ytimg.com/vi/QfzVCLP7JBo/hqdefault.jpg"
+      }
+     ],
+     "id": "principal-4"
+    },
+    {
+     "title": "Mentoring, sponsorship, design reviews",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "RBPtGtMY8bE",
+       "note": "",
+       "title": "Will Larson Reflects on Staff Engineer",
+       "by": "Book Overflow",
+       "thumb": "https://i.ytimg.com/vi/RBPtGtMY8bE/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "Z9ftpRhRiJE",
+       "note": "",
+       "title": "The engineering mindset | Will Larson (Carta, Stripe, Uber, Calm, Digg)",
+       "by": "Lenny's Podcast",
+       "thumb": "https://i.ytimg.com/vi/Z9ftpRhRiJE/hqdefault.jpg"
+      }
+     ],
+     "weak": true,
+     "id": "principal-5"
+    },
+    {
+     "title": "Incident leadership: command, postmortems, learning reviews",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "yoY_pDxc0TA",
+       "note": "A real-sounding simulated incident call.",
+       "title": "Simulated Incident Call Recording",
+       "by": "PagerDuty Inc.",
+       "thumb": "https://i.ytimg.com/vi/yoY_pDxc0TA/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "Fv0nwb1Qn6A",
+       "note": "",
+       "title": "Blameless Postmortem Culture In Software Engineering",
+       "by": "Clément Mihailescu",
+       "thumb": "https://i.ytimg.com/vi/Fv0nwb1Qn6A/hqdefault.jpg"
+      }
+     ],
+     "id": "principal-6"
+    },
+    {
+     "title": "Business acumen and systems thinking",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "XL_lOoomRTA",
+       "note": "",
+       "title": "A Philosophical Look at System Dynamics",
+       "by": "Donella Meadows",
+       "thumb": "https://i.ytimg.com/vi/XL_lOoomRTA/hqdefault.jpg"
+      },
+      {
+       "kind": "video",
+       "id": "4uWKEG0s9Kc",
+       "note": "",
+       "title": "Good Strategy, Bad Strategy | Richard Rumelt",
+       "by": "Lenny's Podcast",
+       "thumb": "https://i.ytimg.com/vi/4uWKEG0s9Kc/hqdefault.jpg"
+      }
+     ],
+     "weak": true,
+     "id": "principal-7"
+    },
+    {
+     "title": "Public presence: writing, talks, open-source leadership",
+     "videos": [
+      {
+       "kind": "video",
+       "id": "wRwKWKD38g0",
+       "note": "",
+       "title": "Must Follow 8-Step Guide To Conference Tech Talk Preparation",
+       "by": "Beachcasts Programming Videos",
+       "thumb": "https://i.ytimg.com/vi/wRwKWKD38g0/hqdefault.jpg"
+      }
+     ],
+     "weak": true,
+     "id": "principal-8"
+    }
+   ]
+  }
+ ]
+}
