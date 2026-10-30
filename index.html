@@ -7,82 +7,69 @@
 <meta name="description" content="An interactive 36-month roadmap from senior DevOps to principal engineer, with free video courses, labs and self-checks for every topic.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M6 22h6l4-12h10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="map.css">
 <script>
-  try { const t = localStorage.getItem('the-path-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  try { const t = localStorage.getItem('the-path-theme'); document.documentElement.dataset.theme = t || 'dark'; } catch (e) { document.documentElement.dataset.theme = 'dark'; }
 </script>
 </head>
 <body>
-<a class="skip" href="#map">Skip to the map</a>
-<div class="bar-top">
-  <div class="wrap bar-inner">
-    <a class="brand" href="#top">The Path</a>
-    <nav aria-label="Sections">
-      <a href="#map">Map</a>
-      <a href="#ninety">First 90 days</a>
-      <a href="#exams">Exams</a>
-      <a href="#method">Method</a>
-      <a href="#budget">Budget &amp; risks</a>
-      <a href="#review">Review</a>
-    </nav>
-    <button class="ghost" id="theme" type="button">Theme</button>
+<a class="skip" href="#stage">Skip to the map</a>
+
+<div id="map-view">
+  <div class="stage" id="stage" tabindex="0" role="application" aria-label="Roadmap world. Drag to move, scroll or pinch to zoom, Tab through nodes.">
+    <canvas id="fx" aria-hidden="true"></canvas>
+    <div class="world" id="world"></div>
   </div>
+
+  <header class="hud hud-top">
+    <div class="hud-brand"><strong>The Path</strong><span id="hud-progress"></span></div>
+    <button class="hud-next" id="hud-next" type="button"></button>
+    <div class="hud-actions">
+      <button class="hud-btn" id="open-search" type="button" aria-label="Search everything"><span>Search</span><kbd>/</kbd></button>
+      <button class="hud-btn" id="fit" type="button">Overview</button>
+      <button class="hud-btn" id="to-plan" type="button">Plan</button>
+      <button class="hud-btn" id="theme" type="button">Theme</button>
+    </div>
+  </header>
+
+  <canvas class="minimap" id="minimap" width="360" height="170" aria-hidden="true"></canvas>
+  <p class="hint-keys" id="hint-keys">Drag to explore · Scroll to zoom · Drag a phase to move it · Click anything</p>
+
+  <div class="dock" role="group" aria-label="Journey through the 36 months">
+    <button class="dock-play" id="play" type="button" aria-label="Start the journey">▶</button>
+    <div class="dock-main">
+      <p class="dock-text" id="dock-text"></p>
+      <div class="gantt" id="gantt" aria-hidden="true"></div>
+      <label><span class="sr">Month in the plan</span><input id="month" type="range" min="1" max="36" step="1" value="1"></label>
+    </div>
+    <div class="dock-side">
+      <button class="hud-btn" id="today" type="button">Today</button>
+      <label class="dock-opt"><input id="optional" type="checkbox"> Optional exams</label>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </div>
 
-<header class="hero wrap" id="top">
-  <p class="eyebrow">Senior DevOps → Principal Engineer · 36 months · 10–12 hours a week</p>
-  <h1>The Path</h1>
-  <p class="lede">Eight phases and 68 topics, each with free video courses, a hands-on lab and a question to test yourself. Follow the arrows, press play to see the plan unfold, and tick things off as you go.</p>
-</header>
-
-<main>
-  <section class="wrap stats" aria-label="Your progress" id="stats"></section>
-  <section class="wrap next" id="next" aria-label="What to do next"></section>
-
-  <section class="wrap" id="map" aria-labelledby="map-title">
-    <div class="section-head">
-      <h2 id="map-title">The map</h2>
-      <div class="controls">
-        <div class="seg" role="group" aria-label="Map view">
-          <button type="button" id="view-skill" aria-pressed="true">Skill map</button>
-          <button type="button" id="view-time" aria-pressed="false">Timeline</button>
-        </div>
-        <label class="search"><span class="sr">Search topics and courses</span>
-          <input id="search" type="search" placeholder="Search: eBPF, Raft, Terraform…" autocomplete="off">
-        </label>
-        <label class="toggle"><input id="optional" type="checkbox"> Optional exams</label>
-      </div>
+<div id="plan-view" hidden>
+  <div class="bar-top">
+    <div class="wrap bar-inner">
+      <button class="primary" id="to-map" type="button">← Back to the map</button>
+      <nav aria-label="Sections">
+        <a href="#ninety">First 90 days</a>
+        <a href="#exams">Exams</a>
+        <a href="#method">Method</a>
+        <a href="#budget">Budget &amp; risks</a>
+        <a href="#review">Review</a>
+      </nav>
     </div>
-    <div class="results" id="results" role="status"></div>
-
-    <div class="scrub">
-      <button class="play" id="play" type="button" aria-label="Play through the 36 months">▶</button>
-      <label class="scrub-range"><span class="sr">Month in the plan</span>
-        <input id="month" type="range" min="1" max="36" step="1" value="1">
-      </label>
-      <button class="ghost" id="today" type="button">Today</button>
-      <p class="scrub-text" id="scrub-text" aria-live="off"></p>
-    </div>
-
-    <div class="map-frame">
-      <div class="map-scroll" id="skill-view" tabindex="-1"></div>
-      <div class="map-scroll" id="time-view" tabindex="0" role="region" aria-label="Roadmap timeline. Scrolls sideways on small screens." hidden></div>
-    </div>
-    <ul class="legend" id="legend-skill" aria-label="Skill map legend">
-      <li><svg width="28" height="10" aria-hidden="true"><path d="M0 5h22" class="lg-edge"/><path d="M20 1l7 4-7 4z" class="lg-arrow"/></svg> Builds on</li>
-      <li><span class="lg-ring"></span> In focus this month</li>
-      <li>Hover a phase to see what it needs and unlocks</li>
-    </ul>
-    <ul class="legend" id="legend-time" aria-label="Timeline legend" hidden>
-      <li><svg width="28" height="12" aria-hidden="true"><rect y="1" width="28" height="10" rx="5" class="lg-bar"/></svg> Focus period</li>
-      <li><svg width="28" height="12" aria-hidden="true"><rect y="4.5" width="28" height="3" rx="1.5" class="lg-faint"/></svg> Continuous practice</li>
-      <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" class="lg-dot"/></svg> Topic</li>
-      <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" class="lg-dot done"/></svg> Topic done</li>
-      <li><svg width="14" height="14" aria-hidden="true"><path d="M7 1l6 6-6 6-6-6z" class="lg-core"/></svg> Core exam</li>
-      <li><svg width="14" height="14" aria-hidden="true"><path d="M7 2l5 5-5 5-5-5z" class="lg-opt"/></svg> Optional exam</li>
-    </ul>
-  </section>
-
-  <section class="wrap" id="ninety" aria-labelledby="ninety-title">
+  </div>
+  <header class="hero wrap">
+    <p class="eyebrow">Senior DevOps → Principal Engineer · 36 months · 10–12 hours a week</p>
+    <h1>The plan</h1>
+  </header>
+  <main>
+    <section class="wrap stats" aria-label="Your progress" id="stats"></section>
+<section class="wrap" id="ninety" aria-labelledby="ninety-title">
     <div class="section-head">
       <h2 id="ninety-title">Your first 90 days</h2>
       <p class="hint">A concrete start, so momentum begins this week.</p>
@@ -152,9 +139,8 @@
       <article><h3>Thin coverage is labelled</h3><p>A few topics have no strong free course. They're marked "Thin coverage" rather than padded out, so lean on the book or docs for those.</p></article>
     </div>
   </section>
-</main>
-
-<footer class="wrap foot">
+  </main>
+  <footer class="wrap foot">
   <p>Your progress is saved in this browser only. Move it between devices with export and import.</p>
   <div class="foot-actions">
     <button class="ghost" id="export" type="button">Export progress</button>
@@ -162,10 +148,18 @@
     <button class="ghost" id="reset" type="button">Reset</button>
   </div>
 </footer>
+</div>
 
 <div class="tip" id="tip" role="tooltip" hidden></div>
 <div class="scrim" id="scrim" hidden></div>
 <aside class="panel" id="panel" aria-labelledby="panel-title" tabindex="-1" hidden></aside>
+<div class="player-float" id="player" hidden></div>
+<div class="palette" id="palette" hidden role="dialog" aria-modal="true" aria-label="Search everything">
+  <div class="palette-box">
+    <input id="palette-input" type="search" placeholder="Jump to a phase, topic, course or exam…" autocomplete="off" aria-label="Search everything">
+    <ul id="palette-list" role="listbox"></ul>
+  </div>
+</div>
 <script src="app.js"></script>
 </body>
 </html>

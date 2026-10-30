@@ -2,13 +2,21 @@
 
 const STORE_KEY = 'the-path-progress-v1';
 const THEME_KEY = 'the-path-theme';
-const VIEW_KEY = 'the-path-view';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const COLUMNS = [['systems'], ['network', 'code'], ['cloud', 'k8s'], ['security', 'data'], ['principal']];
+const TOTAL_MONTHS = 36;
 
-const LAYOUT = { width: 1256, gutter: 178, right: 18, top: 50, row: 72, months: 36 };
-LAYOUT.month = (LAYOUT.width - LAYOUT.gutter - LAYOUT.right) / LAYOUT.months;
+// World positions of each phase, left to right in dependency order.
+const HOMES = {
+  systems: [0, 0], network: [1120, -600], code: [1120, 600], cloud: [2300, -640],
+  k8s: [2300, 620], security: [3480, -640], data: [3480, 620], principal: [4640, 0],
+};
+const ORBIT = { rx: 345, ry: 268, examRx: 480, examRy: 392 };
+const FAR_ZOOM = 0.44;
+const MIN_ZOOM = 0.09;
+const MAX_ZOOM = 1.8;
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let data;
 let progress = loadProgress();
@@ -16,10 +24,23 @@ let selectedPhase = null;
 let hoveredPhase = null;
 let activeTab = 'overview';
 let openTopic = null;
-let lastFocus = null;
 let month = 1;
 let playTimer = null;
-let view = 'skill';
+let colors = {};
+let bursts = [];
+let searchQuery = '';
+
+const cam = { x: 2300, y: 0, k: 0.2 };
+const camTarget = { x: 2300, y: 0, k: 0.26 };
+const bodies = [];       // everything the physics loop moves
+const planets = {};      // phase id -> body
+const moons = {};        // topic id -> body
+let courseBodies = [];
+let edges = [];
+let stars = [];
+let viewW = 0;
+let viewH = 0;
+let portrait = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -64,6 +85,7 @@ function setDone(key, value) {
   if (value) progress.items[key] = true;
   else delete progress.items[key];
   saveProgress();
+  if (value && key.startsWith('t:')) celebrate(key.slice(2));
   refresh();
 }
 
@@ -76,18 +98,16 @@ function currentMonth(now = new Date()) {
   return (now.getFullYear() - data.startYear) * 12 + now.getMonth() + 1 - data.startMonth + 1;
 }
 
-const clampMonth = (value) => Math.min(LAYOUT.months, Math.max(1, value));
+const clampMonth = (value) => Math.min(TOTAL_MONTHS, Math.max(1, value));
 const phaseById = (id) => data.phases.find((phase) => phase.id === id);
 const color = (phase) => `var(--s${phase.n})`;
 const topicsDone = (phase) => phase.topics.filter((topic) => isDone(`t:${topic.id}`)).length;
 const phasePct = (phase) => Math.round((topicsDone(phase) / phase.topics.length) * 100);
+const allTopics = () => data.phases.flatMap((phase) => phase.topics.map((topic) => ({ phase, topic })));
 const allCerts = () => data.phases
   .flatMap((phase) => phase.certs.map((cert) => ({ ...cert, phase })))
   .sort((a, b) => a.month - b.month);
 const certKey = (cert) => `c:${cert.exam}`;
-const monthX = (value) => LAYOUT.gutter + (value - 1) * LAYOUT.month;
-const laneY = (index) => LAYOUT.top + index * LAYOUT.row;
-const barY = (index) => laneY(index) + 44;
 const unlocks = (phase) => data.phases.filter((other) => other.needs.includes(phase.id));
 const inFocus = (phase, at = month) => at >= phase.start && at <= phase.end;
 
@@ -96,15 +116,15 @@ function practising(phase, at = month) {
   return Boolean(range) && at >= range[0] && at < range[1];
 }
 
+function faintRange(phase) {
+  if (phase.ongoing) return [phase.end + 1, TOTAL_MONTHS + 1];
+  if (phase.habit) return [1, phase.start];
+  return null;
+}
+
 function ancestors(id, found = new Set()) {
   phaseById(id).needs.forEach((need) => { found.add(need); ancestors(need, found); });
   return found;
-}
-
-function faintRange(phase) {
-  if (phase.ongoing) return [phase.end + 1, LAYOUT.months + 1];
-  if (phase.habit) return [1, phase.start];
-  return null;
 }
 
 function formatLength(video) {
@@ -128,305 +148,697 @@ function phaseVideoStats(phase) {
   };
 }
 
-/* Skill map */
+/* World construction */
 
-function renderSkillMap() {
-  const graph = el('div', { class: 'graph', id: 'graph' });
-  graph.append(svg('svg', { class: 'graph-edges', id: 'graph-edges', 'aria-hidden': 'true' }));
-  COLUMNS.forEach((ids) => graph.append(el('div', { class: 'col' }, ...ids.map((id) => renderNode(phaseById(id))))));
-  $('skill-view').replaceChildren(graph);
-  new ResizeObserver(drawEdges).observe(graph);
+function addBody(node, x, y, extra = {}) {
+  const body = { node, x, y, vx: 0, vy: 0, seed: Math.random() * 6.28, ...extra };
+  bodies.push(body);
+  return body;
 }
 
-function renderNode(phase) {
-  const list = el('ul', { class: 'node-topics' }, ...phase.topics.map((topic) => el('li', { class: 'node-topic', 'data-topic': topic.id },
-    el('input', {
-      class: 'check', type: 'checkbox', 'aria-label': `Done: ${topic.title}`, 'data-key': `t:${topic.id}`,
-      onchange: (event) => setDone(`t:${topic.id}`, event.target.checked),
-    }),
-    el('button', { type: 'button', text: topic.short, onclick: () => openPanel(phase.id, topic.id, 'topics') }))));
-  const exams = phase.certs.slice().sort((a, b) => a.month - b.month).map((cert) => el('button', {
-    class: `chip${cert.core ? '' : ' opt'}`, type: 'button', 'data-cert-chip': certKey(cert), 'data-exam': cert.core ? 'core' : 'optional', 'data-month': cert.month, text: cert.exam,
-    title: `${cert.name}, target ${monthLabel(cert.month)}`,
-    onclick: () => openPanel(phase.id, null, 'exams'),
-  }));
-  const needs = phase.needs.map((id) => phaseById(id).short).join(', ');
-  const enter = () => { hoveredPhase = phase.id; highlight(); };
-  const leave = () => { hoveredPhase = null; highlight(); };
-  return el('article', {
-    class: 'node', 'data-node': phase.id, style: `--c:${color(phase)}`,
-    onmouseenter: enter, onmouseleave: leave, onfocusin: enter, onfocusout: leave,
+function buildWorld() {
+  const world = $('world');
+  data.phases.forEach((phase) => {
+    const [homeX, homeY] = HOMES[phase.id];
+    // Portrait screens flow top to bottom instead of left to right.
+    const [hx, hy] = portrait ? [homeY, homeX] : [homeX, homeY];
+    const planet = addBody(renderPlanet(phase), hx, hy, { kind: 'planet', phase, hx, hy, startX: hx, startY: hy });
+    planets[phase.id] = planet;
+    world.append(planet.node);
+
+    phase.topics.forEach((topic, i) => {
+      const angle = -Math.PI / 2 + (i / phase.topics.length) * Math.PI * 2;
+      const ox = Math.cos(angle) * ORBIT.rx;
+      const oy = Math.sin(angle) * ORBIT.ry;
+      const moon = addBody(renderMoon(phase, topic), hx + ox * 0.4, hy + oy * 0.4, { kind: 'moon', phase, topic, parent: planet, ox, oy });
+      moons[topic.id] = moon;
+      world.append(moon.node);
+    });
+
+    const certs = phase.certs.slice().sort((a, b) => a.month - b.month);
+    certs.forEach((cert, i) => {
+      const span = Math.min(2.2, 0.42 * certs.length);
+      const angle = -Math.PI / 2 - span / 2 + (certs.length > 1 ? (i / (certs.length - 1)) * span : span / 2);
+      const ox = Math.cos(angle) * ORBIT.examRx;
+      const oy = Math.sin(angle) * ORBIT.examRy;
+      const sat = addBody(renderSatellite(phase, cert), hx + ox, hy + oy, { kind: 'satellite', phase, cert, parent: planet, ox, oy });
+      world.append(sat.node);
+    });
+  });
+
+  edges = [];
+  data.phases.forEach((phase) => {
+    phase.needs
+      .filter((need) => !phase.needs.some((other) => other !== need && ancestors(other).has(need)))
+      .forEach((need) => edges.push({ from: planets[need], to: planets[phase.id], fromId: need, toId: phase.id }));
+  });
+
+  stars = Array.from({ length: 170 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.3 + 0.3, d: Math.random() * 0.06 + 0.015, t: Math.random() * 6.28 }));
+}
+
+function renderPlanet(phase) {
+  const circumference = 2 * Math.PI * 90;
+  return el('button', {
+    class: 'wnode planet', type: 'button', style: `--c:${color(phase)}`, 'data-phase': phase.id, 'data-drag': phase.id,
+    'aria-label': `Phase ${phase.n}: ${phase.title}. Open details.`,
+    onclick: () => focusPhase(phase.id),
+    onmouseenter: () => { hoveredPhase = phase.id; applyHighlight(); },
+    onmouseleave: () => { hoveredPhase = null; applyHighlight(); },
+    onfocus: () => { hoveredPhase = phase.id; applyHighlight(); },
+    onblur: () => { hoveredPhase = null; applyHighlight(); },
   },
-  el('button', { class: 'node-head', type: 'button', onclick: () => openPanel(phase.id), 'aria-label': `Phase ${phase.n}: ${phase.title}. Open details.` },
-    el('span', { class: 'node-kicker' }, el('span', { text: `Phase ${phase.n} · M${phase.start}–${phase.end}` }), el('span', { class: 'state', 'data-state': phase.id })),
-    el('span', { class: 'node-title', text: phase.title }),
-    el('span', { class: 'meter' }, el('i', { 'data-meter': phase.id }))),
-  list,
-  needs ? el('p', { class: 'node-needs', text: `Builds on: ${needs}` }) : null,
-  el('div', { class: 'node-exams' }, ...exams));
+  svg('svg', { viewBox: '0 0 190 190', 'aria-hidden': 'true' },
+    svg('circle', { class: 'ring-bg', cx: 95, cy: 95, r: 90 }),
+    svg('circle', { class: 'ring', cx: 95, cy: 95, r: 90, 'stroke-dasharray': circumference, 'stroke-dashoffset': circumference, 'data-ring': phase.id })),
+  el('span', { class: 'planet-in' },
+    el('span', { class: 'planet-num', text: `PHASE ${phase.n}` }),
+    el('span', { class: 'planet-name', text: phase.short }),
+    el('span', { class: 'planet-sub', 'data-sub': phase.id }),
+    el('span', { class: 'planet-state', 'data-state': phase.id })));
 }
 
-function drawEdges() {
-  const layer = $('graph-edges');
-  const graph = $('graph');
-  if (!layer || view !== 'skill' || !graph.offsetWidth) return;
-  const box = graph.getBoundingClientRect();
-  const parts = [];
-  data.phases.forEach((phase) => {
-    const target = graph.querySelector(`[data-node="${phase.id}"]`).getBoundingClientRect();
-    const toY = target.top - box.top + 34;
-    const toX = target.left - box.left - 7;
-    const direct = phase.needs.filter((need) => !phase.needs.some((other) => other !== need && ancestors(other).has(need)));
-    direct.forEach((need, i) => {
-      const source = graph.querySelector(`[data-node="${need}"]`).getBoundingClientRect();
-      const fromX = source.right - box.left;
-      const fromY = source.top - box.top + 34;
-      const bend = Math.max(26, (toX - fromX) * 0.45);
-      const landY = toY + (i - (direct.length - 1) / 2) * 7;
-      const style = `--c:${color(phaseById(need))}`;
-      parts.push(
-        svg('path', { class: 'g-edge', style, 'data-from': need, 'data-to': phase.id, d: `M${fromX} ${fromY} C${fromX + bend} ${fromY} ${toX - bend} ${landY} ${toX} ${landY}` }),
-        svg('path', { class: 'g-arrow', style, 'data-from': need, 'data-to': phase.id, d: `M${toX} ${landY - 4}l7 4-7 4z` }),
-      );
-    });
-  });
-  layer.replaceChildren(...parts);
-  highlight();
+function renderMoon(phase, topic) {
+  return el('div', {
+    class: 'wnode moon', style: `--c:${color(phase)}`, 'data-moon': topic.id, 'data-phase': phase.id,
+    onclick: (event) => { if (!event.target.classList.contains('tick')) focusTopic(phase.id, topic.id); },
+  },
+    el('div', { class: 'moon-box' },
+      el('input', {
+        class: 'tick', type: 'checkbox', 'aria-label': `Done: ${topic.title}`, 'data-key': `t:${topic.id}`,
+        onchange: (event) => setDone(`t:${topic.id}`, event.target.checked),
+      }),
+      el('button', {
+        class: 'moon-label', type: 'button', text: topic.short,
+        onfocus: () => flyToBody(moons[topic.id], Math.max(cam.k, 0.7)),
+      })));
 }
 
-/* Timeline */
-
-function renderTimeline() {
-  const height = LAYOUT.top + data.phases.length * LAYOUT.row + 10;
-  const root = svg('svg', {
-    class: 'map', viewBox: `0 0 ${LAYOUT.width} ${height}`, role: 'group',
-    'aria-label': 'Timeline of eight phases over 36 months. Select a phase to see its topics and courses.',
+function renderSatellite(phase, cert) {
+  return el('button', {
+    class: `wnode satellite${cert.core ? '' : ' opt'}`, type: 'button', style: `--c:${color(phase)}`, 'data-phase': phase.id,
+    'data-cert': certKey(cert), 'data-month': cert.month, 'data-exam': cert.core ? 'core' : 'optional', text: cert.exam,
+    title: `${cert.name}, target ${monthLabel(cert.month)}`, onclick: () => openPanel(phase.id, null, 'exams'),
   });
+}
 
-  for (let year = 0; year < 3; year += 1) {
-    root.append(svg('text', { class: 'axis-year', x: monthX(year * 12 + 1) + 4, y: 17, text: `Year ${year + 1}` }));
-  }
-  for (let m = 1; m <= LAYOUT.months + 1; m += 6) {
-    const x = monthX(m);
-    root.append(svg('line', { class: 'grid', x1: x, x2: x, y1: m % 12 === 1 ? 4 : 24, y2: height - 6 }));
-    if (m <= LAYOUT.months) root.append(svg('text', { class: 'axis-text', x: x + 4, y: 37, text: `M${m} · ${monthLabel(m)}` }));
-  }
+/* Course fan: a topic's courses burst out around it */
 
-  data.phases.forEach((phase, index) => root.append(renderLane(phase, index)));
-  data.phases.forEach((phase, index) => {
-    phase.needs.forEach((need) => {
-      const from = data.phases.findIndex((other) => other.id === need);
-      const source = data.phases[from];
-      const x1 = monthX(Math.min(source.end + 1, Math.max(phase.start, source.start + 1)));
-      const x2 = monthX(phase.start);
-      const y1 = barY(from);
-      const y2 = barY(index);
-      const mid = (y1 + y2) / 2;
-      root.append(
-        svg('path', { class: 'edge', 'data-to': phase.id, 'data-from': need, d: `M${x1} ${y1} C${x1} ${mid} ${x2} ${mid} ${x2} ${y2}` }),
-        svg('circle', { class: 'edge-dot', 'data-to': phase.id, 'data-from': need, cx: x1, cy: y1, r: 3 }),
-      );
-    });
+function closeFan() {
+  courseBodies.forEach((body) => { body.node.remove(); bodies.splice(bodies.indexOf(body), 1); });
+  courseBodies = [];
+  document.querySelectorAll('.moon.open').forEach((node) => node.classList.remove('open'));
+}
+
+function openFan(topicId) {
+  closeFan();
+  const moon = moons[topicId];
+  if (!moon) return [];
+  moon.node.classList.add('open');
+  const length = Math.hypot(moon.ox, moon.oy) || 1;
+  const ux = moon.ox / length;
+  const uy = moon.oy / length;
+  const sideways = Math.abs(ux) > Math.abs(uy);
+  const out = sideways ? 300 : 210;
+  const spacing = sideways ? 196 : 244;
+  moon.topic.videos.forEach((video, i) => {
+    const shift = (i - (moon.topic.videos.length - 1) / 2) * spacing;
+    const ox = ux * out + (sideways ? 0 : shift);
+    const oy = uy * out + (sideways ? shift : 0);
+    const node = renderCourse(video, i === 0, moon);
+    const body = addBody(node, moon.x, moon.y, { kind: 'course', parent: moon, ox, oy, phase: moon.phase });
+    courseBodies.push(body);
+    $('world').append(node);
   });
+  return courseBodies;
+}
 
-  root.append(
-    svg('line', { class: 'now-line', id: 'playhead', x1: 0, x2: 0, y1: 41, y2: height - 6 }),
-    svg('text', { class: 'now-label', id: 'playhead-label', y: 50 }),
+function renderCourse(video, first, moon) {
+  return el('button', {
+    class: 'wnode course', type: 'button', style: `--c:${color(moon.phase)}`, 'data-phase': moon.phase.id,
+    'aria-label': `Play ${video.title}`, onclick: () => playVideo(video),
+  },
+  el('img', { src: video.thumb, alt: '', loading: 'lazy', draggable: 'false' }),
+  el('span', { class: 'course-play', 'aria-hidden': 'true', text: '▶' }),
+  el('span', { class: 'course-body' },
+    first ? el('span', { class: 'course-start', text: 'START HERE' }) : null,
+    el('span', { class: 'course-title', text: video.title }),
+    el('span', { class: 'course-meta', text: `${formatLength(video)} · ${video.by}` })));
+}
+
+function videoUrl(video) {
+  return video.kind === 'playlist'
+    ? `https://www.youtube.com/playlist?list=${video.id}`
+    : `https://www.youtube.com/watch?v=${video.id}`;
+}
+
+function embedUrl(video) {
+  return video.kind === 'playlist'
+    ? `https://www.youtube-nocookie.com/embed/videoseries?list=${video.id}&autoplay=1`
+    : `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1`;
+}
+
+function playVideo(video) {
+  const player = $('player');
+  player.hidden = false;
+  player.replaceChildren(
+    el('div', { class: 'player-bar' },
+      el('span', { text: video.title }),
+      el('a', { class: 'linkish', href: videoUrl(video), target: '_blank', rel: 'noopener', text: 'YouTube ↗' }),
+      el('button', { class: 'linkish', type: 'button', text: 'Close', onclick: () => { player.hidden = true; player.replaceChildren(); } })),
+    el('iframe', { src: embedUrl(video), title: video.title, allow: 'autoplay; encrypted-media; picture-in-picture', allowfullscreen: true }),
   );
-  $('time-view').replaceChildren(root);
 }
 
-function renderLane(phase, index) {
-  const y = laneY(index);
-  const by = barY(index);
-  const x1 = monthX(phase.start);
-  const x2 = monthX(phase.end + 1);
-  const lane = svg('g', {
-    class: 'lane', 'data-phase': phase.id, tabindex: 0, role: 'button', style: `color:${color(phase)}`,
-    'aria-label': `Phase ${phase.n}, ${phase.title}, months ${phase.start} to ${phase.end}`,
-    onclick: () => openPanel(phase.id),
-    onkeydown: (event) => {
-      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openPanel(phase.id); }
-    },
-    onmouseenter: () => { hoveredPhase = phase.id; highlight(); },
-    onmouseleave: () => { hoveredPhase = null; highlight(); },
-    onfocus: () => { hoveredPhase = phase.id; highlight(); },
-    onblur: () => { hoveredPhase = null; highlight(); },
-  });
+/* Camera */
 
-  lane.append(
-    svg('rect', { class: 'lane-hit', x: 0, y: y + 2, width: LAYOUT.width, height: LAYOUT.row - 4, rx: 8 }),
-    svg('text', { class: 'lane-num', x: 16, y: by - 8, text: String(phase.n).padStart(2, '0') }),
-    svg('text', { class: 'lane-name', x: 38, y: by - 7, text: phase.short }),
-    svg('text', { class: 'lane-pct', x: 38, y: by + 10, 'data-pct': phase.id }),
-  );
-
-  const faint = faintRange(phase);
-  if (faint) lane.append(svg('rect', { class: 'bar-faint', x: monthX(faint[0]), y: by - 1.5, width: monthX(faint[1]) - monthX(faint[0]), height: 3, rx: 1.5 }));
-  lane.append(svg('rect', { class: 'bar', x: x1, y: by - 5, width: x2 - x1, height: 10, rx: 5 }));
-
-  const inset = 11;
-  const step = phase.topics.length > 1 ? (x2 - x1 - inset * 2) / (phase.topics.length - 1) : 0;
-  phase.topics.forEach((topic, i) => {
-    const cx = x1 + inset + i * step;
-    lane.append(svg('g', {
-      class: 'station-g', 'data-topic': topic.id,
-      onclick: (event) => { event.stopPropagation(); openPanel(phase.id, topic.id, 'topics'); },
-      onmousemove: (event) => showTip(event, topic.short, `${topic.videos.length} free ${topic.videos.length === 1 ? 'course' : 'courses'}`),
-      onmouseleave: hideTip,
-    },
-    svg('circle', { class: 'station-hit', cx, cy: by, r: Math.max(step / 2, 8) }),
-    svg('circle', { class: 'station', cx, cy: by, r: 5.5 })));
-  });
-
-  phase.certs.forEach((cert) => {
-    const cx = monthX(cert.month) + LAYOUT.month / 2;
-    const cy = cert.core ? by - 20 : by + 17;
-    const size = cert.core ? 7 : 6;
-    const group = svg('g', {
-      'data-exam': cert.core ? 'core' : 'optional',
-      onclick: (event) => { event.stopPropagation(); openPanel(phase.id, null, 'exams'); },
-      onmousemove: (event) => showTip(event, cert.name, `M${cert.month} · ${monthLabel(cert.month)} · ${cert.core ? 'core' : 'optional'} · ${cert.cost}`),
-      onmouseleave: hideTip,
-    },
-    svg('path', { class: `exam${cert.core ? '' : ' opt'}`, 'data-cert': certKey(cert), d: `M${cx} ${cy - size}l${size} ${size}-${size} ${size}-${size}-${size}z` }));
-    if (cert.core) group.append(svg('text', { class: 'exam-label', x: cx + 10, y: cy + 4, text: cert.exam }));
-    lane.append(group);
-  });
-  return lane;
+function panelOffset() {
+  if ($('panel').hidden) return { x: 0, y: 0 };
+  if (viewW <= 760) return { x: 0, y: $('panel').offsetHeight / 2 - 30 };
+  return { x: $('panel').offsetWidth / 2, y: 0 };
 }
 
-/* Shared map state */
+function flyTo(x, y, k) {
+  const offset = panelOffset();
+  camTarget.k = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, k));
+  camTarget.x = x + offset.x / camTarget.k;
+  camTarget.y = y + offset.y / camTarget.k;
+  if (reducedMotion) Object.assign(cam, camTarget);
+}
 
-function highlight() {
-  const active = hoveredPhase || selectedPhase;
+const flyToBody = (body, k) => flyTo(body.x, body.y, k);
+
+function fitPoints(points, pad = 90) {
+  const xs = points.map((point) => point[0]);
+  const ys = points.map((point) => point[1]);
+  const minX = Math.min(...xs) - pad;
+  const maxX = Math.max(...xs) + pad;
+  const minY = Math.min(...ys) - pad;
+  const maxY = Math.max(...ys) + pad;
+  const offset = panelOffset();
+  const freeW = viewW - offset.x * 2 - 24;
+  const freeH = viewH - offset.y * 2 - 190;
+  const k = Math.min(freeW / (maxX - minX), freeH / (maxY - minY), 1.05);
+  flyTo((minX + maxX) / 2, (minY + maxY) / 2 + 20 / k, k);
+}
+
+function clusterPoints(phaseId) {
+  const { x, y } = planets[phaseId];
+  return [[x - ORBIT.examRx - 60, y - ORBIT.examRy - 20], [x + ORBIT.examRx + 60, y + ORBIT.ry + 40]];
+}
+
+function fitAll() {
+  const points = Object.values(planets).flatMap((planet) => clusterPoints(planet.phase.id));
+  fitPoints(points, 20);
+}
+
+const focusPhase = (phaseId) => {
+  openPanel(phaseId);
+  fitPoints(clusterPoints(phaseId), 20);
+};
+
+function focusTopic(phaseId, topicId) {
+  openPanel(phaseId, topicId, 'topics');
+}
+
+/* Animation loop */
+
+function step(now, last) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  const ease = reducedMotion ? 1 : 1 - Math.exp(-dt * 4.5);
+  cam.x += (camTarget.x - cam.x) * ease;
+  cam.y += (camTarget.y - cam.y) * ease;
+  cam.k *= Math.exp(Math.log(camTarget.k / cam.k) * ease);
+
+  const time = now / 1000;
+  const inverse = Math.max(1, 0.7 / cam.k);
+  bodies.forEach((body) => {
+    if (body === dragBody) {
+      body.vx = 0; body.vy = 0;
+    } else {
+      let tx;
+      let ty;
+      if (body.kind === 'planet') {
+        tx = body.hx; ty = body.hy;
+      } else {
+        const wobble = reducedMotion || body.kind === 'course' ? 0 : 5;
+        // Zoomed out, planets grow on screen, so their moons spread to stay visible.
+        const spread = body.kind === 'moon' ? Math.max(1, Math.min(1.4, inverse / 2.1)) : 1;
+        tx = body.parent.x + body.ox * spread + Math.cos(time * 0.5 + body.seed) * wobble;
+        ty = body.parent.y + body.oy * spread + Math.sin(time * 0.6 + body.seed) * wobble;
+      }
+      const stiffness = body.kind === 'planet' ? 10 : 26;
+      if (reducedMotion) {
+        body.x = tx; body.y = ty;
+      } else {
+        body.vx = (body.vx + (tx - body.x) * stiffness * dt) * Math.exp(-dt * 7);
+        body.vy = (body.vy + (ty - body.y) * stiffness * dt) * Math.exp(-dt * 7);
+        body.x += body.vx * dt * 7;
+        body.y += body.vy * dt * 7;
+      }
+    }
+    const scale = body.kind === 'planet' ? inverse : 1;
+    const half = body.kind === 'planet' ? '' : 'translate(-50%,-50%)';
+    body.node.style.transform = `translate(${body.x.toFixed(1)}px,${body.y.toFixed(1)}px) ${half} scale(${scale.toFixed(3)})`;
+  });
+
+  $('world').style.transform = `translate(${viewW / 2 - cam.x * cam.k}px,${viewH / 2 - cam.y * cam.k}px) scale(${cam.k})`;
+  $('stage').classList.toggle('far', cam.k < FAR_ZOOM);
+  drawFx(time, dt);
+  drawMinimap();
+}
+
+function loop() {
+  let last = performance.now();
+  const frame = (now) => {
+    step(now, last);
+    last = now;
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
+function resize() {
+  viewW = window.innerWidth;
+  viewH = window.innerHeight;
+  const ratio = Math.min(window.devicePixelRatio || 1, 2);
+  const fx = $('fx');
+  fx.width = viewW * ratio;
+  fx.height = viewH * ratio;
+  fx.getContext('2d').setTransform(ratio, 0, 0, ratio, 0, 0);
+}
+
+function readColors() {
+  const style = getComputedStyle(document.documentElement);
+  colors = { text: style.getPropertyValue('--text').trim(), line: style.getPropertyValue('--line').trim(), muted: style.getPropertyValue('--text-3').trim(), dark: currentTheme() === 'dark' };
+  data.phases.forEach((phase) => { colors[phase.id] = style.getPropertyValue(`--s${phase.n}`).trim(); });
+}
+
+const toScreen = (x, y) => [(x - cam.x) * cam.k + viewW / 2, (y - cam.y) * cam.k + viewH / 2];
+
+function bezierPoint(p0, c0, c1, p1, t) {
+  const u = 1 - t;
+  const f = (a, b, c, d) => u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * c + t * t * t * d;
+  return [f(p0[0], c0[0], c1[0], p1[0]), f(p0[1], c0[1], c1[1], p1[1])];
+}
+
+function activePhase() {
+  return hoveredPhase || selectedPhase;
+}
+
+function isRelated(id) {
+  const active = activePhase();
+  if (!active) return true;
+  return id === active || ancestors(active).has(id) || phaseById(id).needs.includes(active);
+}
+
+function drawFx(time, dt) {
+  const ctx = $('fx').getContext('2d');
+  ctx.clearRect(0, 0, viewW, viewH);
+
+  ctx.fillStyle = colors.dark ? '#ffffff' : '#000000';
+  stars.forEach((star) => {
+    const sx = ((star.x * viewW - cam.x * star.d * cam.k * 4) % viewW + viewW) % viewW;
+    const sy = ((star.y * viewH - cam.y * star.d * cam.k * 4) % viewH + viewH) % viewH;
+    ctx.globalAlpha = (colors.dark ? 0.32 : 0.12) * (reducedMotion ? 0.7 : 0.6 + 0.4 * Math.sin(time * 0.7 + star.t));
+    ctx.beginPath();
+    ctx.arc(sx, sy, star.r, 0, 6.28);
+    ctx.fill();
+  });
+
+  // Glow behind phases that are in focus this month
+  Object.values(planets).forEach((planet) => {
+    if (!inFocus(planet.phase)) return;
+    const [sx, sy] = toScreen(planet.x, planet.y);
+    const pulse = reducedMotion ? 1 : 1 + 0.08 * Math.sin(time * 2);
+    const radius = Math.max(150, 520 * cam.k) * pulse;
+    const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius);
+    glow.addColorStop(0, colors[planet.phase.id]);
+    glow.addColorStop(1, `${colors[planet.phase.id]}00`);
+    ctx.globalAlpha = colors.dark ? 0.28 : 0.16;
+    ctx.fillStyle = glow;
+    ctx.fillRect(sx - radius, sy - radius, radius * 2, radius * 2);
+  });
+
+  // Spokes to topics and courses
+  ctx.lineCap = 'round';
+  bodies.forEach((body) => {
+    if (body.kind !== 'moon' && body.kind !== 'course') return;
+    const [ax, ay] = toScreen(body.parent.x, body.parent.y);
+    const [bx, by] = toScreen(body.x, body.y);
+    const done = body.kind === 'moon' && isDone(`t:${body.topic.id}`);
+    ctx.globalAlpha = (isRelated(body.phase.id) ? 1 : 0.15) * (body.kind === 'course' ? 0.9 : done ? 0.85 : 0.28);
+    ctx.strokeStyle = colors[body.phase.id];
+    ctx.lineWidth = body.kind === 'course' ? 2 : done ? 2.5 : 1;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+    ctx.stroke();
+  });
+
+  // Dependency edges with flowing energy
+  const active = activePhase();
   const chain = active ? ancestors(active) : new Set();
-  const related = (id) => !active || id === active || chain.has(id) || phaseById(active).needs.includes(id) || phaseById(id).needs.includes(active);
+  edges.forEach((edge) => {
+    const p0 = toScreen(edge.from.x, edge.from.y);
+    const p1 = toScreen(edge.to.x, edge.to.y);
+    const bendX = portrait ? 0 : (p1[0] - p0[0]) * 0.5;
+    const bendY = portrait ? (p1[1] - p0[1]) * 0.5 : 0;
+    const c0 = [p0[0] + bendX, p0[1] + bendY];
+    const c1 = [p1[0] - bendX, p1[1] - bendY];
+    const on = Boolean(active) && (edge.toId === active || edge.fromId === active || chain.has(edge.toId));
+    const quiet = Boolean(active) && !on;
+    const gradient = ctx.createLinearGradient(p0[0], p0[1], p1[0], p1[1]);
+    gradient.addColorStop(0, colors[edge.fromId]);
+    gradient.addColorStop(1, colors[edge.toId]);
+    ctx.globalAlpha = quiet ? 0.07 : on ? 0.95 : 0.42;
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = Math.min(on ? 4 : 2.5, Math.max(1.5, (on ? 8 : 4.5) * cam.k * 1.6));
+    ctx.beginPath();
+    ctx.moveTo(p0[0], p0[1]);
+    ctx.bezierCurveTo(c0[0], c0[1], c1[0], c1[1], p1[0], p1[1]);
+    ctx.stroke();
 
-  document.querySelectorAll('[data-node]').forEach((node) => {
-    node.classList.toggle('dim', !related(node.dataset.node));
-    node.classList.toggle('selected', node.dataset.node === selectedPhase);
+    if (reducedMotion || quiet) return;
+    const live = on || inFocus(phaseById(edge.fromId)) || inFocus(phaseById(edge.toId));
+    const count = live ? 5 : 2;
+    const size = Math.min(5, Math.max(1.8, (live ? 11 : 7) * cam.k));
+    for (let i = 0; i < count; i += 1) {
+      const t = (time * (live ? 0.16 : 0.07) + i / count) % 1;
+      const [x, y] = bezierPoint(p0, c0, c1, p1, t);
+      ctx.globalAlpha = Math.sin(t * Math.PI) * (live ? 1 : 0.55);
+      ctx.fillStyle = t < 0.5 ? colors[edge.fromId] : colors[edge.toId];
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, 6.28);
+      ctx.fill();
+    }
   });
-  document.querySelectorAll('.lane').forEach((lane) => {
-    lane.classList.toggle('dim', !related(lane.dataset.phase));
-    lane.classList.toggle('selected', lane.dataset.phase === selectedPhase);
+
+  // Completion bursts
+  bursts = bursts.filter((spark) => spark.life > 0);
+  bursts.forEach((spark) => {
+    spark.life -= dt;
+    spark.x += spark.vx * dt;
+    spark.y += spark.vy * dt;
+    spark.vy += 240 * dt;
+    const [sx, sy] = toScreen(spark.x, spark.y);
+    ctx.globalAlpha = Math.max(0, spark.life / 0.9);
+    ctx.fillStyle = spark.color;
+    ctx.beginPath();
+    ctx.arc(sx, sy, Math.max(1.5, 5 * cam.k), 0, 6.28);
+    ctx.fill();
   });
-  document.querySelectorAll('.g-edge, .g-arrow').forEach((edge) => {
-    const on = Boolean(active) && (edge.dataset.from === active || edge.dataset.to === active || chain.has(edge.dataset.to));
-    edge.classList.toggle('on', on);
-    edge.classList.toggle('off', Boolean(active) && !on);
+  ctx.globalAlpha = 1;
+}
+
+function celebrate(topicId) {
+  const moon = moons[topicId];
+  if (!moon || reducedMotion) return;
+  const count = topicsDone(moon.phase) === moon.phase.topics.length ? 140 : 26;
+  const origin = count > 26 ? moon.parent : moon;
+  for (let i = 0; i < count; i += 1) {
+    const angle = Math.random() * 6.28;
+    const speed = 120 + Math.random() * (count > 26 ? 520 : 260);
+    bursts.push({ x: origin.x, y: origin.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 0.5 + Math.random() * 0.5, color: colors[moon.phase.id] });
+  }
+  if (count > 26) toast(`Phase ${moon.phase.n} complete: ${moon.phase.title}`);
+}
+
+const MINI = { minX: -700, maxX: 5340, minY: -1160, maxY: 1100 };
+
+function placeMinimap() {
+  if (portrait) Object.assign(MINI, { minX: -1160, maxX: 1100, minY: -700, maxY: 5340 });
+}
+
+function drawMinimap() {
+  const canvas = $('minimap');
+  if (!canvas.offsetWidth) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  const sx = w / (MINI.maxX - MINI.minX);
+  const sy = h / (MINI.maxY - MINI.minY);
+  const mx = (x) => (x - MINI.minX) * sx;
+  const my = (y) => (y - MINI.minY) * sy;
+  ctx.clearRect(0, 0, w, h);
+  ctx.lineWidth = 2;
+  edges.forEach((edge) => {
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = colors[edge.fromId];
+    ctx.beginPath();
+    ctx.moveTo(mx(edge.from.x), my(edge.from.y));
+    ctx.lineTo(mx(edge.to.x), my(edge.to.y));
+    ctx.stroke();
   });
-  document.querySelectorAll('.edge, .edge-dot').forEach((edge) => {
-    edge.classList.toggle('on', Boolean(active) && (edge.dataset.to === active || edge.dataset.from === active));
+  ctx.globalAlpha = 1;
+  Object.values(planets).forEach((planet) => {
+    ctx.fillStyle = colors[planet.phase.id];
+    ctx.beginPath();
+    ctx.arc(mx(planet.x), my(planet.y), inFocus(planet.phase) ? 13 : 8, 0, 6.28);
+    ctx.fill();
+  });
+  const halfW = viewW / 2 / cam.k;
+  const halfH = viewH / 2 / cam.k;
+  ctx.strokeStyle = colors.text;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(mx(cam.x - halfW), my(cam.y - halfH), halfW * 2 * sx, halfH * 2 * sy);
+}
+
+/* Pointer and keyboard input */
+
+let dragBody = null;
+let panStart = null;
+let moved = false;
+const pointers = new Map();
+let pinch = null;
+
+function zoomAt(screenX, screenY, factor) {
+  const k = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, camTarget.k * factor));
+  const worldX = (screenX - viewW / 2) / camTarget.k + camTarget.x;
+  const worldY = (screenY - viewH / 2) / camTarget.k + camTarget.y;
+  camTarget.x = worldX - (screenX - viewW / 2) / k;
+  camTarget.y = worldY - (screenY - viewH / 2) / k;
+  camTarget.k = k;
+}
+
+function bindPointer() {
+  const stage = $('stage');
+  stage.addEventListener('wheel', (event) => {
+    event.preventDefault();
+    dismissHint();
+    zoomAt(event.clientX, event.clientY, Math.exp(-event.deltaY * (event.ctrlKey ? 0.01 : 0.0016)));
+  }, { passive: false });
+
+  stage.addEventListener('pointerdown', (event) => {
+    pointers.set(event.pointerId, [event.clientX, event.clientY]);
+    moved = false;
+    stopPlay();
+    dismissHint();
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      pinch = { distance: Math.hypot(a[0] - b[0], a[1] - b[1]) };
+      panStart = null;
+      dragBody = null;
+      return;
+    }
+    const handle = event.target.closest('[data-drag]');
+    if (handle) {
+      dragBody = planets[handle.dataset.drag];
+    }
+    panStart = { x: event.clientX, y: event.clientY, cx: camTarget.x, cy: camTarget.y, bx: dragBody?.x, by: dragBody?.y };
+  });
+
+  window.addEventListener('pointermove', (event) => {
+    if (!pointers.has(event.pointerId)) return;
+    pointers.set(event.pointerId, [event.clientX, event.clientY]);
+    if (pinch && pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      const distance = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      zoomAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, distance / pinch.distance);
+      pinch.distance = distance;
+      moved = true;
+      return;
+    }
+    if (!panStart) return;
+    const dx = event.clientX - panStart.x;
+    const dy = event.clientY - panStart.y;
+    if (!moved && Math.hypot(dx, dy) < 6) return;
+    moved = true;
+    stage.classList.add('grabbing');
+    if (dragBody) {
+      dragBody.x = panStart.bx + dx / cam.k;
+      dragBody.y = panStart.by + dy / cam.k;
+      dragBody.hx = dragBody.x;
+      dragBody.hy = dragBody.y;
+    } else {
+      camTarget.x = panStart.cx - dx / cam.k;
+      camTarget.y = panStart.cy - dy / cam.k;
+      if (reducedMotion) { cam.x = camTarget.x; cam.y = camTarget.y; }
+    }
+  });
+
+  const release = (event) => {
+    pointers.delete(event.pointerId);
+    if (pointers.size < 2) pinch = null;
+    if (!pointers.size) { dragBody = null; panStart = null; stage.classList.remove('grabbing'); }
+  };
+  window.addEventListener('pointerup', release);
+  window.addEventListener('pointercancel', release);
+
+  // A drag that ends on a button must not count as a click on it.
+  stage.addEventListener('click', (event) => {
+    if (moved) { event.preventDefault(); event.stopPropagation(); moved = false; }
+  }, true);
+
+  stage.addEventListener('dblclick', (event) => {
+    if (event.target.closest('.wnode')) return;
+    zoomAt(event.clientX, event.clientY, 1.8);
+  });
+
+  $('minimap').addEventListener('click', (event) => {
+    const box = event.target.getBoundingClientRect();
+    const x = MINI.minX + ((event.clientX - box.left) / box.width) * (MINI.maxX - MINI.minX);
+    const y = MINI.minY + ((event.clientY - box.top) / box.height) * (MINI.maxY - MINI.minY);
+    flyTo(x, y, camTarget.k);
   });
 }
 
-function syncMap() {
+function dismissHint() {
+  $('hint-keys').classList.add('gone');
+}
+
+function bindKeys() {
+  document.addEventListener('keydown', (event) => {
+    const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName) && document.activeElement.type !== 'checkbox' && document.activeElement.type !== 'range';
+    if (event.key === 'Escape') {
+      if (!$('palette').hidden) closePalette();
+      else if (selectedPhase) closePanel();
+      return;
+    }
+    if ((event.key === 'k' && (event.ctrlKey || event.metaKey)) || (event.key === '/' && !typing)) {
+      event.preventDefault();
+      openPalette();
+      return;
+    }
+    if (typing || !$('plan-view').hidden || !$('palette').hidden) return;
+    const stepSize = 120 / camTarget.k;
+    const inStage = !$('panel').contains(document.activeElement);
+    if (!inStage) return;
+    if (event.key === 'ArrowLeft' && document.activeElement.type !== 'range') camTarget.x -= stepSize;
+    else if (event.key === 'ArrowRight' && document.activeElement.type !== 'range') camTarget.x += stepSize;
+    else if (event.key === 'ArrowUp' && document.activeElement.type !== 'range') camTarget.y -= stepSize;
+    else if (event.key === 'ArrowDown' && document.activeElement.type !== 'range') camTarget.y += stepSize;
+    else if (event.key === '+' || event.key === '=') zoomAt(viewW / 2, viewH / 2, 1.25);
+    else if (event.key === '-') zoomAt(viewW / 2, viewH / 2, 0.8);
+    else if (event.key === '0') fitAll();
+    else if (event.key === ' ' && event.target === $('stage')) { event.preventDefault(); togglePlay(); }
+  });
+}
+
+/* Highlight and state */
+
+function applyHighlight() {
+  document.querySelectorAll('.wnode').forEach((node) => node.classList.toggle('dim', !isRelated(node.dataset.phase)));
+}
+
+function syncWorld() {
+  const circumference = 2 * Math.PI * 90;
   data.phases.forEach((phase) => {
-    const state = document.querySelector(`[data-state="${phase.id}"]`);
     const done = topicsDone(phase) === phase.topics.length;
-    state.textContent = done ? 'Done' : inFocus(phase) ? 'In focus' : practising(phase) ? 'Practice' : `${topicsDone(phase)}/${phase.topics.length}`;
-    state.classList.toggle('now', !done && inFocus(phase));
-    document.querySelector(`[data-node="${phase.id}"]`).classList.toggle('focus-now', inFocus(phase));
-    document.querySelector(`[data-meter="${phase.id}"]`).style.width = `${phasePct(phase)}%`;
-  });
-  document.querySelectorAll('[data-pct]').forEach((node) => {
-    const phase = phaseById(node.dataset.pct);
-    node.textContent = `${topicsDone(phase)}/${phase.topics.length} · M${phase.start}–${phase.end}`;
-  });
-  document.querySelectorAll('.station-g').forEach((group) => {
-    group.querySelector('.station').classList.toggle('done', isDone(`t:${group.dataset.topic}`));
+    const planet = planets[phase.id].node;
+    planet.classList.toggle('now', inFocus(phase));
+    planet.classList.toggle('future', month < phase.start && !practising(phase) && !done);
+    document.querySelector(`[data-ring="${phase.id}"]`).setAttribute('stroke-dashoffset', circumference * (1 - phasePct(phase) / 100));
+    document.querySelector(`[data-sub="${phase.id}"]`).textContent = `${topicsDone(phase)}/${phase.topics.length} · M${phase.start}–${phase.end}`;
+    const state = document.querySelector(`[data-state="${phase.id}"]`);
+    const label = done ? 'Done' : inFocus(phase) ? 'In focus' : practising(phase) ? 'Ongoing' : '';
+    state.textContent = label;
+    state.hidden = !label;
   });
   document.querySelectorAll('[data-key]').forEach((input) => {
     input.checked = isDone(input.dataset.key);
-    input.closest('.node-topic')?.classList.toggle('done', input.checked);
-  });
-  document.querySelectorAll('[data-cert]').forEach((node) => node.classList.toggle('done', isDone(node.dataset.cert)));
-  document.querySelectorAll('[data-cert-chip]').forEach((chip) => {
-    chip.classList.toggle('passed', isDone(chip.dataset.certChip));
-    chip.classList.toggle('due', Number(chip.dataset.month) === month);
+    input.closest('.moon')?.classList.toggle('done', input.checked);
   });
   const showOptional = $('optional').checked;
-  document.querySelectorAll('[data-exam="optional"]').forEach((node) => { node.style.display = showOptional ? '' : 'none'; });
-  document.querySelectorAll('.node-exams').forEach((row) => {
-    row.hidden = ![...row.children].some((chip) => chip.dataset.exam === 'core' || showOptional);
+  document.querySelectorAll('.satellite').forEach((node) => {
+    node.classList.toggle('passed', isDone(node.dataset.cert));
+    node.classList.toggle('due', Number(node.dataset.month) === month);
+    node.hidden = node.dataset.exam === 'optional' && !showOptional;
   });
   document.querySelectorAll('#ladder tr.is-opt').forEach((row) => row.classList.toggle('hide', !showOptional));
+  document.querySelectorAll('.gantt b').forEach((mark) => { mark.hidden = mark.dataset.exam === 'optional' && !showOptional; });
+}
+
+function toast(message) {
+  const node = $('toast');
+  node.textContent = message;
+  node.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => node.classList.remove('show'), 2600);
 }
 
 function setMonth(value) {
   month = clampMonth(value);
   $('month').value = month;
-  const x = monthX(month);
-  const head = $('playhead');
-  head.setAttribute('x1', x);
-  head.setAttribute('x2', x);
-  const label = $('playhead-label');
-  label.setAttribute('x', x + 4);
-  label.textContent = `M${month}`;
-
   const focus = data.phases.filter((phase) => inFocus(phase)).map((phase) => phase.short);
-  const practice = data.phases.filter((phase) => practising(phase)).map((phase) => phase.short);
   const showOptional = $('optional').checked;
   const exams = allCerts().filter((cert) => cert.core || showOptional);
-  const due = exams.filter((cert) => cert.month === month).map((cert) => cert.exam);
+  const due = exams.filter((cert) => cert.month === month);
   const next = exams.find((cert) => cert.month > month);
-  const text = $('scrub-text');
-  text.replaceChildren(
-    el('b', { text: `Month ${month} · ${monthLabel(month)}. ` }),
-    `In focus: ${focus.join(', ') || 'none'}. `,
-    practice.length ? `Ongoing: ${practice.join(', ')}. ` : '',
-    due.length ? el('b', { text: `Exam this month: ${due.join(', ')}. ` }) : '',
-    next ? `Next exam: ${next.exam} in ${monthLabel(next.month)}.` : 'No more exams after this.',
+  $('dock-text').replaceChildren(
+    el('b', { text: `Month ${month} · ${monthLabel(month)}` }),
+    ` · In focus: ${focus.join(', ') || 'none'}`,
+    due.length ? el('b', { text: ` · Exam: ${due.map((cert) => cert.exam).join(', ')}` }) : '',
+    next ? ` · Next exam: ${next.exam}, ${monthLabel(next.month)}` : '',
   );
-  syncMap();
+  syncWorld();
+  return due;
+}
+
+function journeyCamera() {
+  const focused = data.phases.filter((phase) => inFocus(phase));
+  if (!focused.length) return;
+  fitPoints(focused.flatMap((phase) => clusterPoints(phase.id)), 20);
 }
 
 function stopPlay() {
+  if (!playTimer) return;
   clearInterval(playTimer);
   playTimer = null;
   $('play').textContent = '▶';
-  $('play').setAttribute('aria-label', 'Play through the 36 months');
+  $('play').setAttribute('aria-label', 'Start the journey');
 }
 
 function togglePlay() {
   if (playTimer) { stopPlay(); return; }
-  if (month >= LAYOUT.months) setMonth(1);
+  closePanel();
+  if (month >= TOTAL_MONTHS) setMonth(1);
   $('play').textContent = '❚❚';
-  $('play').setAttribute('aria-label', 'Pause');
+  $('play').setAttribute('aria-label', 'Pause the journey');
+  journeyCamera();
   playTimer = setInterval(() => {
-    if (month >= LAYOUT.months) { stopPlay(); return; }
-    setMonth(month + 1);
-  }, 650);
+    if (month >= TOTAL_MONTHS) { stopPlay(); fitAll(); toast('Month 36: you made it to Principal'); return; }
+    const before = data.phases.filter((phase) => inFocus(phase)).map((phase) => phase.id).join();
+    const due = setMonth(month + 1);
+    const after = data.phases.filter((phase) => inFocus(phase)).map((phase) => phase.id).join();
+    if (before !== after) {
+      journeyCamera();
+      const started = data.phases.find((phase) => phase.start === month);
+      if (started && !due.length) toast(`Phase ${started.n} begins: ${started.title}`);
+    }
+    if (due.length) toast(`${monthLabel(month)}: ${due.map((cert) => cert.name).join(', ')}`);
+  }, 1100);
 }
 
-function setView(next) {
-  view = next;
-  const skill = next === 'skill';
-  $('skill-view').hidden = !skill;
-  $('time-view').hidden = skill;
-  $('legend-skill').hidden = !skill;
-  $('legend-time').hidden = skill;
-  $('view-skill').setAttribute('aria-pressed', String(skill));
-  $('view-time').setAttribute('aria-pressed', String(!skill));
-  try { localStorage.setItem(VIEW_KEY, next); } catch (e) { /* not remembered */ }
-  drawEdges();
+function renderGantt() {
+  const gantt = $('gantt');
+  const pct = (value) => ((value - 1) / (TOTAL_MONTHS - 1)) * 100;
+  data.phases.forEach((phase, i) => {
+    gantt.append(el('i', { style: `--c:${color(phase)};left:${pct(phase.start)}%;width:${pct(phase.end + 1) - pct(phase.start)}%;top:${i * 2.2}px` }));
+  });
+  allCerts().forEach((cert) => gantt.append(el('b', { 'data-exam': cert.core ? 'core' : 'optional', style: `left:${pct(cert.month)}%` })));
 }
 
-function showTip(event, title, detail) {
-  const tip = $('tip');
-  tip.replaceChildren(document.createTextNode(title), el('small', { text: detail }));
-  tip.hidden = false;
-  const box = tip.getBoundingClientRect();
-  const left = Math.min(event.clientX + 14, window.innerWidth - box.width - 8);
-  const top = event.clientY - box.height - 12;
-  tip.style.left = `${Math.max(8, left)}px`;
-  tip.style.top = `${top < 8 ? event.clientY + 16 : top}px`;
-}
-
-function hideTip() { $('tip').hidden = true; }
-
-/* Page sections */
+/* HUD and plan */
 
 function nextTopic() {
   const now = clampMonth(currentMonth());
@@ -438,23 +850,21 @@ function nextTopic() {
   return null;
 }
 
-function renderNext() {
+function renderHud() {
+  const total = allTopics().length;
+  const done = data.phases.reduce((sum, phase) => sum + topicsDone(phase), 0);
+  $('hud-progress').textContent = `${done}/${total} topics`;
   const next = nextTopic();
-  if (!next) {
-    $('next').replaceChildren(el('div', { class: 'next-inner', style: '--c:var(--text)' }, el('strong', { text: 'Every topic is done. Time to mentor someone.' })));
-    return;
+  const button = $('hud-next');
+  button.hidden = !next;
+  if (next) {
+    button.replaceChildren(`${data.phases.some(topicsDone) ? 'Next up' : 'Start here'}: `, el('b', { text: next.topic.short }));
+    button.onclick = () => focusTopic(next.phase.id, next.topic.id);
   }
-  const { phase, topic } = next;
-  const started = data.phases.some(topicsDone);
-  $('next').replaceChildren(el('div', { class: 'next-inner', style: `--c:${color(phase)}` },
-    el('div', {},
-      el('small', { text: `${started ? 'Next up' : 'Start here'} · Phase ${phase.n}, ${phase.short}` }),
-      el('strong', { text: topic.title })),
-    el('button', { class: 'primary', type: 'button', text: started ? 'Continue' : 'Start', onclick: () => openPanel(phase.id, topic.id, 'topics') })));
 }
 
 function renderStats() {
-  const total = data.phases.reduce((sum, phase) => sum + phase.topics.length, 0);
+  const total = allTopics().length;
   const done = data.phases.reduce((sum, phase) => sum + topicsDone(phase), 0);
   const core = allCerts().filter((cert) => cert.core);
   const passed = core.filter((cert) => isDone(certKey(cert))).length;
@@ -483,8 +893,10 @@ function renderLadder() {
     el('td', { class: 'num', text: `M${cert.month} · ${monthLabel(cert.month)}` }),
     el('td', { text: cert.name }),
     el('td', { class: 'num', text: cert.exam }),
-    el('td', {}, el('button', { class: 'phase-link', type: 'button', style: `--c:${color(cert.phase)}`, onclick: () => openPanel(cert.phase.id, null, 'exams') },
-      el('i', { class: 'swatch' }), cert.phase.short)),
+    el('td', {}, el('button', {
+      class: 'phase-link', type: 'button', style: `--c:${color(cert.phase)}`,
+      onclick: () => { showMap(); focusPhase(cert.phase.id); activeTab = 'exams'; renderPanel(); },
+    }, el('i', { class: 'swatch' }), cert.phase.short)),
     el('td', {}, el('span', { class: `pill${cert.core ? ' solid' : ''}`, text: cert.core ? 'Core' : 'Optional' })),
     el('td', { class: 'num', text: cert.cost }),
   )));
@@ -510,44 +922,33 @@ function renderStatic() {
   $('risks').replaceChildren(...data.risks.map((risk) => el('div', {}, el('strong', { text: risk.title }), el('p', { text: risk.fix }))));
 }
 
+function showPlan() {
+  stopPlay();
+  closePanel();
+  $('map-view').hidden = true;
+  $('plan-view').hidden = false;
+  document.body.classList.remove('in-map');
+  window.scrollTo(0, 0);
+}
+
+function showMap() {
+  $('plan-view').hidden = true;
+  $('map-view').hidden = false;
+  document.body.classList.add('in-map');
+}
+
 /* Detail panel */
 
-function videoUrl(video) {
-  return video.kind === 'playlist'
-    ? `https://www.youtube.com/playlist?list=${video.id}`
-    : `https://www.youtube.com/watch?v=${video.id}`;
-}
-
-function embedUrl(video) {
-  return video.kind === 'playlist'
-    ? `https://www.youtube-nocookie.com/embed/videoseries?list=${video.id}&autoplay=1`
-    : `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1`;
-}
-
 function renderVideo(video, first) {
-  const card = el('div', { class: 'vid' });
-  const play = el('button', {
-    class: 'linkish', type: 'button', text: 'Play here',
-    onclick: () => {
-      const existing = card.querySelector('iframe');
-      if (existing) { existing.remove(); play.textContent = 'Play here'; return; }
-      play.textContent = 'Close player';
-      card.append(el('iframe', {
-        class: 'player', src: embedUrl(video), title: video.title, loading: 'lazy',
-        allow: 'autoplay; encrypted-media; picture-in-picture', allowfullscreen: true,
-      }));
-    },
-  });
-  card.append(
+  return el('div', { class: 'vid' },
     el('img', { src: video.thumb, alt: '', loading: 'lazy', width: 112, height: 63 }),
     el('div', {},
       el('div', { class: 'vid-title' }, first ? el('span', { class: 'start', text: 'START HERE' }) : null, video.title),
       el('div', { class: 'vid-by', text: `${formatLength(video)} · ${video.by}` }),
       video.note ? el('div', { class: 'vid-note', text: video.note }) : null,
-      el('div', { class: 'vid-actions' }, play,
-        el('a', { class: 'linkish', href: videoUrl(video), target: '_blank', rel: 'noopener', text: 'Open on YouTube ↗' }))),
-  );
-  return card;
+      el('div', { class: 'vid-actions' },
+        el('button', { class: 'linkish', type: 'button', text: 'Play', onclick: () => playVideo(video) }),
+        el('a', { class: 'linkish', href: videoUrl(video), target: '_blank', rel: 'noopener', text: 'Open on YouTube ↗' }))));
 }
 
 function renderTopic(topic) {
@@ -562,7 +963,7 @@ function renderTopic(topic) {
       }),
       el('button', {
         class: 'topic-btn', type: 'button', 'aria-expanded': String(expanded),
-        onclick: () => { openTopic = expanded ? null : topic.id; renderPanel(); focusTopic(topic.id); },
+        onclick: () => { selectTopic(expanded ? null : topic.id); document.querySelector(`#topic-${CSS.escape(topic.id)} .topic-btn`)?.focus(); },
       },
       el('span', {},
         el('span', { class: 'topic-title', text: topic.title }),
@@ -581,10 +982,6 @@ function renderTopic(topic) {
   return row;
 }
 
-function focusTopic(topicId) {
-  document.querySelector(`#topic-${CSS.escape(topicId)} .topic-btn`)?.focus();
-}
-
 function checkItem(key, label, title, detail) {
   return el('div', { class: 'item' },
     el('input', { class: 'check', type: 'checkbox', 'aria-label': label, checked: isDone(key), onchange: (event) => setDone(key, event.target.checked) }),
@@ -594,7 +991,7 @@ function checkItem(key, label, title, detail) {
 function phaseLinks(phases, empty) {
   if (!phases.length) return el('p', { class: 'sec-note', text: empty });
   return el('div', { class: 'links' }, ...phases.map((phase) => el('button', {
-    class: 'result', type: 'button', style: `--c:${color(phase)}`, onclick: () => openPanel(phase.id),
+    class: 'hud-btn', type: 'button', style: `--c:${color(phase)}`, onclick: () => focusPhase(phase.id),
   }, el('i', { class: 'swatch' }), phase.title)));
 }
 
@@ -672,65 +1069,131 @@ function renderPanel() {
   panel.scrollTop = scroll;
 }
 
+function selectTopic(topicId) {
+  openTopic = topicId;
+  renderPanel();
+  if (!topicId) { closeFan(); fitPoints(clusterPoints(selectedPhase), 20); return; }
+  const fan = openFan(topicId);
+  const moon = moons[topicId];
+  const points = [[moon.x, moon.y]];
+  fan.forEach((body) => points.push([moon.x + body.ox, moon.y + body.oy]));
+  fitPoints(points, 150);
+}
+
 function openPanel(phaseId, topicId = null, tab = 'overview') {
-  const phase = phaseById(phaseId);
-  if (!phase) return;
-  if (!selectedPhase) lastFocus = document.activeElement;
+  if (!phaseById(phaseId)) return;
+  stopPlay();
+  dismissHint();
   selectedPhase = phaseId;
   activeTab = tab;
-  openTopic = topicId;
-  hideTip();
   $('panel').hidden = false;
-  $('scrim').hidden = false;
-  renderPanel();
-  $('panel').scrollTop = 0;
-  highlight();
+  document.body.classList.add('panel-open');
   history.replaceState(null, '', `#${phaseId}${topicId ? `/${topicId}` : ''}`);
   if (topicId) {
+    selectTopic(topicId);
     const row = document.getElementById(`topic-${topicId}`);
     if (row) $('panel').scrollTop = row.offsetTop - $('panel').querySelector('.panel-head').offsetHeight - 8;
+  } else {
+    openTopic = null;
+    closeFan();
+    renderPanel();
+    $('panel').scrollTop = 0;
   }
-  $('panel').focus({ preventScroll: true });
+  applyHighlight();
 }
 
 function closePanel() {
+  if (!selectedPhase) return;
   selectedPhase = null;
+  openTopic = null;
+  closeFan();
   $('panel').hidden = true;
-  $('scrim').hidden = true;
-  highlight();
+  document.body.classList.remove('panel-open');
+  applyHighlight();
   history.replaceState(null, '', location.pathname + location.search);
-  if (lastFocus && document.contains(lastFocus)) lastFocus.focus();
 }
 
 function refresh() {
   renderStats();
-  renderNext();
+  renderHud();
   renderLadder();
   renderNinety();
-  syncMap();
+  syncWorld();
   if (selectedPhase) renderPanel();
 }
 
-function runSearch(raw) {
-  const query = raw.trim().toLowerCase();
-  const results = $('results');
-  document.querySelectorAll('.station-g, .node-topic').forEach((node) => node.classList.remove('miss', 'hit'));
-  if (!query) { results.replaceChildren(); return; }
-  const hits = [];
-  data.phases.forEach((phase) => phase.topics.forEach((topic) => {
-    const haystack = [topic.title, topic.short, topic.lab, ...topic.learn, ...topic.videos.flatMap((video) => [video.title, video.by, video.note])].join(' ').toLowerCase();
-    const match = haystack.includes(query);
-    if (match) hits.push({ phase, topic });
-    document.querySelectorAll(`[data-topic="${topic.id}"]`).forEach((node) => {
-      node.classList.toggle('miss', !match);
-      node.classList.toggle('hit', match);
+/* Command palette */
+
+function searchIndex() {
+  const items = [];
+  data.phases.forEach((phase) => {
+    items.push({ label: phase.title, hint: `Phase ${phase.n}`, phase, go: () => focusPhase(phase.id), text: `${phase.title} ${phase.short} ${phase.tools}` });
+    phase.certs.forEach((cert) => {
+      items.push({ label: cert.name, hint: `Exam ${cert.exam}`, phase, go: () => { focusPhase(phase.id); activeTab = 'exams'; renderPanel(); }, text: `${cert.name} ${cert.exam}` });
     });
-  }));
-  if (!hits.length) { results.replaceChildren(`No topics match "${raw.trim()}".`); return; }
-  results.replaceChildren(...hits.slice(0, 12).map(({ phase, topic }) => el('button', {
-    class: 'result', type: 'button', style: `--c:${color(phase)}`, onclick: () => openPanel(phase.id, topic.id, 'topics'),
-  }, el('i', { class: 'swatch' }), topic.short)), hits.length > 12 ? `and ${hits.length - 12} more` : '');
+    phase.topics.forEach((topic) => {
+      items.push({ label: topic.title, hint: 'Topic', phase, go: () => focusTopic(phase.id, topic.id), text: `${topic.title} ${topic.short} ${topic.lab} ${topic.learn.join(' ')}` });
+      topic.videos.forEach((video) => {
+        items.push({ label: video.title, hint: formatLength(video), phase, go: () => focusTopic(phase.id, topic.id), text: `${video.title} ${video.by}` });
+      });
+    });
+  });
+  return items;
 }
+
+let paletteIndex = [];
+let paletteResults = [];
+let paletteCursor = 0;
+
+function openPalette() {
+  stopPlay();
+  showMap();
+  if (!paletteIndex.length) paletteIndex = searchIndex();
+  $('palette').hidden = false;
+  $('palette-input').value = '';
+  renderPalette('');
+  $('palette-input').focus();
+}
+
+function closePalette() {
+  $('palette').hidden = true;
+  $('stage').focus();
+}
+
+function renderPalette(raw) {
+  searchQuery = raw.trim().toLowerCase();
+  const seen = new Set();
+  paletteResults = paletteIndex
+    .filter((item) => !searchQuery || item.text.toLowerCase().includes(searchQuery))
+    .filter((item) => { const key = item.label + item.hint; if (seen.has(key)) return false; seen.add(key); return true; })
+    .slice(0, 30);
+  paletteCursor = 0;
+  drawPaletteList();
+  document.querySelectorAll('.moon').forEach((node) => {
+    const topic = allTopics().find(({ topic: candidate }) => candidate.id === node.dataset.moon).topic;
+    const hay = `${topic.title} ${topic.short} ${topic.learn.join(' ')} ${topic.videos.map((video) => video.title).join(' ')}`.toLowerCase();
+    node.classList.toggle('match', Boolean(searchQuery) && hay.includes(searchQuery));
+  });
+}
+
+function drawPaletteList() {
+  const list = $('palette-list');
+  if (!paletteResults.length) { list.replaceChildren(el('li', { text: 'Nothing matches that.' })); return; }
+  list.replaceChildren(...paletteResults.map((item, i) => el('li', {
+    role: 'option', 'aria-selected': String(i === paletteCursor), style: `--c:${color(item.phase)}`,
+    onclick: () => choosePalette(i), onmousemove: () => { if (paletteCursor !== i) { paletteCursor = i; drawPaletteList(); } },
+  }, el('i', { class: 'swatch' }), el('span', { text: item.label }), el('small', { text: item.hint }))));
+  list.children[paletteCursor]?.scrollIntoView({ block: 'nearest' });
+}
+
+function choosePalette(i) {
+  const item = paletteResults[i];
+  if (!item) return;
+  $('palette').hidden = true;
+  item.go();
+}
+
+/* Wiring */
 
 function exportProgress() {
   const blob = new Blob([JSON.stringify(progress, null, 2)], { type: 'application/json' });
@@ -752,29 +1215,42 @@ async function importProgress(file) {
 }
 
 function currentTheme() {
-  const set = document.documentElement.dataset.theme;
-  if (set) return set;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return document.documentElement.dataset.theme || 'dark';
 }
 
 function labelTheme() {
-  $('theme').textContent = currentTheme() === 'dark' ? 'Light theme' : 'Dark theme';
+  $('theme').textContent = currentTheme() === 'dark' ? 'Light' : 'Dark';
 }
 
 function openFromHash() {
   const [phaseId, topicId] = decodeURIComponent(location.hash.slice(1)).split('/');
-  if (phaseId && phaseById(phaseId)) openPanel(phaseId, topicId || null, topicId ? 'topics' : 'overview');
+  if (phaseId && phaseById(phaseId)) {
+    showMap();
+    if (topicId) focusTopic(phaseId, topicId);
+    else focusPhase(phaseId);
+  }
 }
 
 function bindEvents() {
-  $('search').addEventListener('input', (event) => runSearch(event.target.value));
   $('optional').addEventListener('change', () => setMonth(month));
-  $('scrim').addEventListener('click', closePanel);
-  $('view-skill').addEventListener('click', () => setView('skill'));
-  $('view-time').addEventListener('click', () => setView('time'));
   $('play').addEventListener('click', togglePlay);
   $('month').addEventListener('input', (event) => { stopPlay(); setMonth(Number(event.target.value)); });
-  $('today').addEventListener('click', () => { stopPlay(); setMonth(currentMonth()); });
+  $('today').addEventListener('click', () => { stopPlay(); setMonth(currentMonth()); fitAll(); });
+  $('fit').addEventListener('click', () => {
+    closePanel();
+    Object.values(planets).forEach((planet) => { planet.hx = planet.startX; planet.hy = planet.startY; });
+    fitAll();
+  });
+  $('to-plan').addEventListener('click', showPlan);
+  $('to-map').addEventListener('click', () => { showMap(); });
+  $('open-search').addEventListener('click', openPalette);
+  $('palette-input').addEventListener('input', (event) => renderPalette(event.target.value));
+  $('palette-input').addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown') { event.preventDefault(); paletteCursor = Math.min(paletteResults.length - 1, paletteCursor + 1); drawPaletteList(); }
+    if (event.key === 'ArrowUp') { event.preventDefault(); paletteCursor = Math.max(0, paletteCursor - 1); drawPaletteList(); }
+    if (event.key === 'Enter') { event.preventDefault(); choosePalette(paletteCursor); }
+  });
+  $('palette').addEventListener('click', (event) => { if (event.target === $('palette')) closePalette(); });
   $('export').addEventListener('click', exportProgress);
   $('import').addEventListener('change', (event) => {
     if (event.target.files[0]) importProgress(event.target.files[0]);
@@ -788,33 +1264,38 @@ function bindEvents() {
     document.documentElement.dataset.theme = next;
     try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* not remembered */ }
     labelTheme();
+    readColors();
   });
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && selectedPhase) closePanel();
-    if (event.key === '/' && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { event.preventDefault(); $('search').focus(); }
-  });
+  window.addEventListener('resize', resize);
   window.addEventListener('hashchange', openFromHash);
+  bindPointer();
+  bindKeys();
 }
 
 async function init() {
+  document.body.classList.add('in-map');
   try {
     const response = await fetch('data/roadmap.json');
     if (!response.ok) throw new Error(response.status);
     data = await response.json();
   } catch (e) {
-    $('stats').replaceChildren(el('p', { text: "The roadmap data couldn't load. Please reload the page." }));
+    $('dock-text').textContent = "The roadmap data couldn't load. Please reload the page.";
     return;
   }
+  resize();
+  portrait = viewH > viewW;
+  placeMinimap();
+  readColors();
   labelTheme();
-  bindEvents();
-  renderSkillMap();
-  renderTimeline();
+  buildWorld();
+  renderGantt();
   renderStatic();
+  bindEvents();
   refresh();
   setMonth(currentMonth());
-  let savedView = 'skill';
-  try { savedView = localStorage.getItem(VIEW_KEY) || 'skill'; } catch (e) { /* default view */ }
-  setView(savedView === 'time' ? 'time' : 'skill');
+  fitAll();
+  loop();
+  setTimeout(dismissHint, 7000);
   openFromHash();
 }
 
