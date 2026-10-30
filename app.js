@@ -2,8 +2,10 @@
 
 const STORE_KEY = 'the-path-progress-v1';
 const THEME_KEY = 'the-path-theme';
+const VIEW_KEY = 'the-path-view';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const COLUMNS = [['systems'], ['network', 'code'], ['cloud', 'k8s'], ['security', 'data'], ['principal']];
 
 const LAYOUT = { width: 1256, gutter: 178, right: 18, top: 50, row: 72, months: 36 };
 LAYOUT.month = (LAYOUT.width - LAYOUT.gutter - LAYOUT.right) / LAYOUT.months;
@@ -11,9 +13,13 @@ LAYOUT.month = (LAYOUT.width - LAYOUT.gutter - LAYOUT.right) / LAYOUT.months;
 let data;
 let progress = loadProgress();
 let selectedPhase = null;
-let activeTab = 'topics';
+let hoveredPhase = null;
+let activeTab = 'overview';
 let openTopic = null;
 let lastFocus = null;
+let month = 1;
+let playTimer = null;
+let view = 'skill';
 
 const $ = (id) => document.getElementById(id);
 
@@ -35,6 +41,7 @@ function setAttrs(node, attrs) {
   for (const [key, value] of Object.entries(attrs)) {
     if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
     else if (key === 'text') node.textContent = value;
+    else if (key === 'checked') node.checked = Boolean(value);
     else if (value !== false && value !== null && value !== undefined) node.setAttribute(key, value === true ? '' : value);
   }
 }
@@ -60,8 +67,8 @@ function setDone(key, value) {
   refresh();
 }
 
-function monthLabel(month) {
-  const index = data.startMonth - 1 + month - 1;
+function monthLabel(value) {
+  const index = data.startMonth - 1 + value - 1;
   return `${MONTHS[index % 12]} ${data.startYear + Math.floor(index / 12)}`;
 }
 
@@ -69,6 +76,7 @@ function currentMonth(now = new Date()) {
   return (now.getFullYear() - data.startYear) * 12 + now.getMonth() + 1 - data.startMonth + 1;
 }
 
+const clampMonth = (value) => Math.min(LAYOUT.months, Math.max(1, value));
 const phaseById = (id) => data.phases.find((phase) => phase.id === id);
 const color = (phase) => `var(--s${phase.n})`;
 const topicsDone = (phase) => phase.topics.filter((topic) => isDone(`t:${topic.id}`)).length;
@@ -77,9 +85,21 @@ const allCerts = () => data.phases
   .flatMap((phase) => phase.certs.map((cert) => ({ ...cert, phase })))
   .sort((a, b) => a.month - b.month);
 const certKey = (cert) => `c:${cert.exam}`;
-const monthX = (month) => LAYOUT.gutter + (month - 1) * LAYOUT.month;
+const monthX = (value) => LAYOUT.gutter + (value - 1) * LAYOUT.month;
 const laneY = (index) => LAYOUT.top + index * LAYOUT.row;
 const barY = (index) => laneY(index) + 44;
+const unlocks = (phase) => data.phases.filter((other) => other.needs.includes(phase.id));
+const inFocus = (phase, at = month) => at >= phase.start && at <= phase.end;
+
+function practising(phase, at = month) {
+  const range = faintRange(phase);
+  return Boolean(range) && at >= range[0] && at < range[1];
+}
+
+function ancestors(id, found = new Set()) {
+  phaseById(id).needs.forEach((need) => { found.add(need); ancestors(need, found); });
+  return found;
+}
 
 function faintRange(phase) {
   if (phase.ongoing) return [phase.end + 1, LAYOUT.months + 1];
@@ -87,7 +107,96 @@ function faintRange(phase) {
   return null;
 }
 
-function renderMap() {
+function formatLength(video) {
+  if (video.seconds) {
+    const hours = Math.floor(video.seconds / 3600);
+    const minutes = Math.round((video.seconds % 3600) / 60);
+    return hours ? `${hours}h ${minutes}m` : `${minutes} min`;
+  }
+  if (video.count) return `${video.count} videos`;
+  return 'Full course';
+}
+
+function phaseVideoStats(phase) {
+  const unique = new Map();
+  phase.topics.forEach((topic) => topic.videos.forEach((video) => unique.set(video.id, video)));
+  const videos = [...unique.values()];
+  return {
+    courses: videos.length,
+    hours: Math.round(videos.reduce((sum, video) => sum + (video.seconds || 0), 0) / 3600),
+    playlists: videos.filter((video) => video.kind === 'playlist').length,
+  };
+}
+
+/* Skill map */
+
+function renderSkillMap() {
+  const graph = el('div', { class: 'graph', id: 'graph' });
+  graph.append(svg('svg', { class: 'graph-edges', id: 'graph-edges', 'aria-hidden': 'true' }));
+  COLUMNS.forEach((ids) => graph.append(el('div', { class: 'col' }, ...ids.map((id) => renderNode(phaseById(id))))));
+  $('skill-view').replaceChildren(graph);
+  new ResizeObserver(drawEdges).observe(graph);
+}
+
+function renderNode(phase) {
+  const list = el('ul', { class: 'node-topics' }, ...phase.topics.map((topic) => el('li', { class: 'node-topic', 'data-topic': topic.id },
+    el('input', {
+      class: 'check', type: 'checkbox', 'aria-label': `Done: ${topic.title}`, 'data-key': `t:${topic.id}`,
+      onchange: (event) => setDone(`t:${topic.id}`, event.target.checked),
+    }),
+    el('button', { type: 'button', text: topic.short, onclick: () => openPanel(phase.id, topic.id, 'topics') }))));
+  const exams = phase.certs.slice().sort((a, b) => a.month - b.month).map((cert) => el('button', {
+    class: `chip${cert.core ? '' : ' opt'}`, type: 'button', 'data-cert-chip': certKey(cert), 'data-exam': cert.core ? 'core' : 'optional', 'data-month': cert.month, text: cert.exam,
+    title: `${cert.name}, target ${monthLabel(cert.month)}`,
+    onclick: () => openPanel(phase.id, null, 'exams'),
+  }));
+  const needs = phase.needs.map((id) => phaseById(id).short).join(', ');
+  const enter = () => { hoveredPhase = phase.id; highlight(); };
+  const leave = () => { hoveredPhase = null; highlight(); };
+  return el('article', {
+    class: 'node', 'data-node': phase.id, style: `--c:${color(phase)}`,
+    onmouseenter: enter, onmouseleave: leave, onfocusin: enter, onfocusout: leave,
+  },
+  el('button', { class: 'node-head', type: 'button', onclick: () => openPanel(phase.id), 'aria-label': `Phase ${phase.n}: ${phase.title}. Open details.` },
+    el('span', { class: 'node-kicker' }, el('span', { text: `Phase ${phase.n} · M${phase.start}–${phase.end}` }), el('span', { class: 'state', 'data-state': phase.id })),
+    el('span', { class: 'node-title', text: phase.title }),
+    el('span', { class: 'meter' }, el('i', { 'data-meter': phase.id }))),
+  list,
+  needs ? el('p', { class: 'node-needs', text: `Builds on: ${needs}` }) : null,
+  el('div', { class: 'node-exams' }, ...exams));
+}
+
+function drawEdges() {
+  const layer = $('graph-edges');
+  const graph = $('graph');
+  if (!layer || view !== 'skill' || !graph.offsetWidth) return;
+  const box = graph.getBoundingClientRect();
+  const parts = [];
+  data.phases.forEach((phase) => {
+    const target = graph.querySelector(`[data-node="${phase.id}"]`).getBoundingClientRect();
+    const toY = target.top - box.top + 34;
+    const toX = target.left - box.left - 7;
+    const direct = phase.needs.filter((need) => !phase.needs.some((other) => other !== need && ancestors(other).has(need)));
+    direct.forEach((need, i) => {
+      const source = graph.querySelector(`[data-node="${need}"]`).getBoundingClientRect();
+      const fromX = source.right - box.left;
+      const fromY = source.top - box.top + 34;
+      const bend = Math.max(26, (toX - fromX) * 0.45);
+      const landY = toY + (i - (direct.length - 1) / 2) * 7;
+      const style = `--c:${color(phaseById(need))}`;
+      parts.push(
+        svg('path', { class: 'g-edge', style, 'data-from': need, 'data-to': phase.id, d: `M${fromX} ${fromY} C${fromX + bend} ${fromY} ${toX - bend} ${landY} ${toX} ${landY}` }),
+        svg('path', { class: 'g-arrow', style, 'data-from': need, 'data-to': phase.id, d: `M${toX} ${landY - 4}l7 4-7 4z` }),
+      );
+    });
+  });
+  layer.replaceChildren(...parts);
+  highlight();
+}
+
+/* Timeline */
+
+function renderTimeline() {
   const height = LAYOUT.top + data.phases.length * LAYOUT.row + 10;
   const root = svg('svg', {
     class: 'map', viewBox: `0 0 ${LAYOUT.width} ${height}`, role: 'group',
@@ -95,16 +204,14 @@ function renderMap() {
   });
 
   for (let year = 0; year < 3; year += 1) {
-    const x = monthX(year * 12 + 1);
-    root.append(svg('text', { class: 'axis-year', x: x + 4, y: 17, text: `Year ${year + 1}` }));
+    root.append(svg('text', { class: 'axis-year', x: monthX(year * 12 + 1) + 4, y: 17, text: `Year ${year + 1}` }));
   }
-  for (let month = 1; month <= LAYOUT.months + 1; month += 6) {
-    const x = monthX(month);
-    root.append(svg('line', { class: 'grid', x1: x, x2: x, y1: month % 12 === 1 ? 4 : 24, y2: height - 6 }));
-    if (month <= LAYOUT.months) root.append(svg('text', { class: 'axis-text', x: x + 4, y: 37, text: `M${month} · ${monthLabel(month)}` }));
+  for (let m = 1; m <= LAYOUT.months + 1; m += 6) {
+    const x = monthX(m);
+    root.append(svg('line', { class: 'grid', x1: x, x2: x, y1: m % 12 === 1 ? 4 : 24, y2: height - 6 }));
+    if (m <= LAYOUT.months) root.append(svg('text', { class: 'axis-text', x: x + 4, y: 37, text: `M${m} · ${monthLabel(m)}` }));
   }
 
-  const edges = svg('g');
   data.phases.forEach((phase, index) => root.append(renderLane(phase, index)));
   data.phases.forEach((phase, index) => {
     phase.needs.forEach((need) => {
@@ -115,26 +222,18 @@ function renderMap() {
       const y1 = barY(from);
       const y2 = barY(index);
       const mid = (y1 + y2) / 2;
-      edges.append(
+      root.append(
         svg('path', { class: 'edge', 'data-to': phase.id, 'data-from': need, d: `M${x1} ${y1} C${x1} ${mid} ${x2} ${mid} ${x2} ${y2}` }),
         svg('circle', { class: 'edge-dot', 'data-to': phase.id, 'data-from': need, cx: x1, cy: y1, r: 3 }),
       );
     });
   });
-  root.append(edges);
 
-  const month = currentMonth();
-  const nowMonth = month < 1 ? 1 : month;
-  if (month <= LAYOUT.months) {
-    const x = monthX(nowMonth);
-    root.append(
-      svg('line', { class: 'now-line', x1: x, x2: x, y1: 41, y2: height - 6 }),
-      svg('text', { class: 'now-label', x: x + 4, y: 50, text: month < 1 ? 'START' : 'NOW' }),
-    );
-  }
-
-  $('map-scroll').replaceChildren(root);
-  syncMap();
+  root.append(
+    svg('line', { class: 'now-line', id: 'playhead', x1: 0, x2: 0, y1: 41, y2: height - 6 }),
+    svg('text', { class: 'now-label', id: 'playhead-label', y: 50 }),
+  );
+  $('time-view').replaceChildren(root);
 }
 
 function renderLane(phase, index) {
@@ -149,10 +248,10 @@ function renderLane(phase, index) {
     onkeydown: (event) => {
       if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openPanel(phase.id); }
     },
-    onmouseenter: () => highlight(phase.id),
-    onmouseleave: () => highlight(selectedPhase),
-    onfocus: () => highlight(phase.id),
-    onblur: () => highlight(selectedPhase),
+    onmouseenter: () => { hoveredPhase = phase.id; highlight(); },
+    onmouseleave: () => { hoveredPhase = null; highlight(); },
+    onfocus: () => { hoveredPhase = phase.id; highlight(); },
+    onblur: () => { hoveredPhase = null; highlight(); },
   });
 
   lane.append(
@@ -164,7 +263,7 @@ function renderLane(phase, index) {
 
   const faint = faintRange(phase);
   if (faint) lane.append(svg('rect', { class: 'bar-faint', x: monthX(faint[0]), y: by - 1.5, width: monthX(faint[1]) - monthX(faint[0]), height: 3, rx: 1.5 }));
-  lane.append(svg('rect', { class: 'bar', x: x1, y: by - 4, width: x2 - x1, height: 8, rx: 4 }));
+  lane.append(svg('rect', { class: 'bar', x: x1, y: by - 5, width: x2 - x1, height: 10, rx: 5 }));
 
   const inset = 11;
   const step = phase.topics.length > 1 ? (x2 - x1 - inset * 2) / (phase.topics.length - 1) : 0;
@@ -172,8 +271,8 @@ function renderLane(phase, index) {
     const cx = x1 + inset + i * step;
     lane.append(svg('g', {
       class: 'station-g', 'data-topic': topic.id,
-      onclick: (event) => { event.stopPropagation(); openPanel(phase.id, topic.id); },
-      onmousemove: (event) => showTip(event, topic.title, `${topic.videos.length} free ${topic.videos.length === 1 ? 'course' : 'courses'}`),
+      onclick: (event) => { event.stopPropagation(); openPanel(phase.id, topic.id, 'topics'); },
+      onmousemove: (event) => showTip(event, topic.short, `${topic.videos.length} free ${topic.videos.length === 1 ? 'course' : 'courses'}`),
       onmouseleave: hideTip,
     },
     svg('circle', { class: 'station-hit', cx, cy: by, r: Math.max(step / 2, 8) }),
@@ -182,7 +281,7 @@ function renderLane(phase, index) {
 
   phase.certs.forEach((cert) => {
     const cx = monthX(cert.month) + LAYOUT.month / 2;
-    const cy = by - 20;
+    const cy = cert.core ? by - 20 : by + 17;
     const size = cert.core ? 7 : 6;
     const group = svg('g', {
       'data-exam': cert.core ? 'core' : 'optional',
@@ -197,20 +296,40 @@ function renderLane(phase, index) {
   return lane;
 }
 
-function highlight(phaseId) {
+/* Shared map state */
+
+function highlight() {
+  const active = hoveredPhase || selectedPhase;
+  const chain = active ? ancestors(active) : new Set();
+  const related = (id) => !active || id === active || chain.has(id) || phaseById(active).needs.includes(id) || phaseById(id).needs.includes(active);
+
+  document.querySelectorAll('[data-node]').forEach((node) => {
+    node.classList.toggle('dim', !related(node.dataset.node));
+    node.classList.toggle('selected', node.dataset.node === selectedPhase);
+  });
   document.querySelectorAll('.lane').forEach((lane) => {
-    const phase = phaseById(lane.dataset.phase);
-    const related = !phaseId || lane.dataset.phase === phaseId
-      || phase.needs.includes(phaseId) || phaseById(phaseId).needs.includes(lane.dataset.phase);
-    lane.classList.toggle('dim', !related);
+    lane.classList.toggle('dim', !related(lane.dataset.phase));
     lane.classList.toggle('selected', lane.dataset.phase === selectedPhase);
   });
+  document.querySelectorAll('.g-edge, .g-arrow').forEach((edge) => {
+    const on = Boolean(active) && (edge.dataset.from === active || edge.dataset.to === active || chain.has(edge.dataset.to));
+    edge.classList.toggle('on', on);
+    edge.classList.toggle('off', Boolean(active) && !on);
+  });
   document.querySelectorAll('.edge, .edge-dot').forEach((edge) => {
-    edge.classList.toggle('on', Boolean(phaseId) && (edge.dataset.to === phaseId || edge.dataset.from === phaseId));
+    edge.classList.toggle('on', Boolean(active) && (edge.dataset.to === active || edge.dataset.from === active));
   });
 }
 
 function syncMap() {
+  data.phases.forEach((phase) => {
+    const state = document.querySelector(`[data-state="${phase.id}"]`);
+    const done = topicsDone(phase) === phase.topics.length;
+    state.textContent = done ? 'Done' : inFocus(phase) ? 'In focus' : practising(phase) ? 'Practice' : `${topicsDone(phase)}/${phase.topics.length}`;
+    state.classList.toggle('now', !done && inFocus(phase));
+    document.querySelector(`[data-node="${phase.id}"]`).classList.toggle('focus-now', inFocus(phase));
+    document.querySelector(`[data-meter="${phase.id}"]`).style.width = `${phasePct(phase)}%`;
+  });
   document.querySelectorAll('[data-pct]').forEach((node) => {
     const phase = phaseById(node.dataset.pct);
     node.textContent = `${topicsDone(phase)}/${phase.topics.length} · M${phase.start}–${phase.end}`;
@@ -218,10 +337,80 @@ function syncMap() {
   document.querySelectorAll('.station-g').forEach((group) => {
     group.querySelector('.station').classList.toggle('done', isDone(`t:${group.dataset.topic}`));
   });
+  document.querySelectorAll('[data-key]').forEach((input) => {
+    input.checked = isDone(input.dataset.key);
+    input.closest('.node-topic')?.classList.toggle('done', input.checked);
+  });
   document.querySelectorAll('[data-cert]').forEach((node) => node.classList.toggle('done', isDone(node.dataset.cert)));
+  document.querySelectorAll('[data-cert-chip]').forEach((chip) => {
+    chip.classList.toggle('passed', isDone(chip.dataset.certChip));
+    chip.classList.toggle('due', Number(chip.dataset.month) === month);
+  });
   const showOptional = $('optional').checked;
   document.querySelectorAll('[data-exam="optional"]').forEach((node) => { node.style.display = showOptional ? '' : 'none'; });
+  document.querySelectorAll('.node-exams').forEach((row) => {
+    row.hidden = ![...row.children].some((chip) => chip.dataset.exam === 'core' || showOptional);
+  });
   document.querySelectorAll('#ladder tr.is-opt').forEach((row) => row.classList.toggle('hide', !showOptional));
+}
+
+function setMonth(value) {
+  month = clampMonth(value);
+  $('month').value = month;
+  const x = monthX(month);
+  const head = $('playhead');
+  head.setAttribute('x1', x);
+  head.setAttribute('x2', x);
+  const label = $('playhead-label');
+  label.setAttribute('x', x + 4);
+  label.textContent = `M${month}`;
+
+  const focus = data.phases.filter((phase) => inFocus(phase)).map((phase) => phase.short);
+  const practice = data.phases.filter((phase) => practising(phase)).map((phase) => phase.short);
+  const showOptional = $('optional').checked;
+  const exams = allCerts().filter((cert) => cert.core || showOptional);
+  const due = exams.filter((cert) => cert.month === month).map((cert) => cert.exam);
+  const next = exams.find((cert) => cert.month > month);
+  const text = $('scrub-text');
+  text.replaceChildren(
+    el('b', { text: `Month ${month} · ${monthLabel(month)}. ` }),
+    `In focus: ${focus.join(', ') || 'none'}. `,
+    practice.length ? `Ongoing: ${practice.join(', ')}. ` : '',
+    due.length ? el('b', { text: `Exam this month: ${due.join(', ')}. ` }) : '',
+    next ? `Next exam: ${next.exam} in ${monthLabel(next.month)}.` : 'No more exams after this.',
+  );
+  syncMap();
+}
+
+function stopPlay() {
+  clearInterval(playTimer);
+  playTimer = null;
+  $('play').textContent = '▶';
+  $('play').setAttribute('aria-label', 'Play through the 36 months');
+}
+
+function togglePlay() {
+  if (playTimer) { stopPlay(); return; }
+  if (month >= LAYOUT.months) setMonth(1);
+  $('play').textContent = '❚❚';
+  $('play').setAttribute('aria-label', 'Pause');
+  playTimer = setInterval(() => {
+    if (month >= LAYOUT.months) { stopPlay(); return; }
+    setMonth(month + 1);
+  }, 650);
+}
+
+function setView(next) {
+  view = next;
+  const skill = next === 'skill';
+  $('skill-view').hidden = !skill;
+  $('time-view').hidden = skill;
+  $('legend-skill').hidden = !skill;
+  $('legend-time').hidden = skill;
+  $('view-skill').setAttribute('aria-pressed', String(skill));
+  $('view-time').setAttribute('aria-pressed', String(!skill));
+  try { localStorage.setItem(VIEW_KEY, next); } catch (e) { /* not remembered */ }
+  drawEdges();
 }
 
 function showTip(event, title, detail) {
@@ -237,17 +426,44 @@ function showTip(event, title, detail) {
 
 function hideTip() { $('tip').hidden = true; }
 
+/* Page sections */
+
+function nextTopic() {
+  const now = clampMonth(currentMonth());
+  const ordered = data.phases.slice().sort((a, b) => Number(inFocus(b, now)) - Number(inFocus(a, now)) || a.start - b.start);
+  for (const phase of ordered) {
+    const topic = phase.topics.find((candidate) => !isDone(`t:${candidate.id}`));
+    if (topic) return { phase, topic };
+  }
+  return null;
+}
+
+function renderNext() {
+  const next = nextTopic();
+  if (!next) {
+    $('next').replaceChildren(el('div', { class: 'next-inner', style: '--c:var(--text)' }, el('strong', { text: 'Every topic is done. Time to mentor someone.' })));
+    return;
+  }
+  const { phase, topic } = next;
+  const started = data.phases.some(topicsDone);
+  $('next').replaceChildren(el('div', { class: 'next-inner', style: `--c:${color(phase)}` },
+    el('div', {},
+      el('small', { text: `${started ? 'Next up' : 'Start here'} · Phase ${phase.n}, ${phase.short}` }),
+      el('strong', { text: topic.title })),
+    el('button', { class: 'primary', type: 'button', text: started ? 'Continue' : 'Start', onclick: () => openPanel(phase.id, topic.id, 'topics') })));
+}
+
 function renderStats() {
   const total = data.phases.reduce((sum, phase) => sum + phase.topics.length, 0);
   const done = data.phases.reduce((sum, phase) => sum + topicsDone(phase), 0);
   const core = allCerts().filter((cert) => cert.core);
   const passed = core.filter((cert) => isDone(certKey(cert))).length;
   const next = core.find((cert) => !isDone(certKey(cert)));
-  const month = currentMonth();
-  let timing = `Month ${month} of 36`;
-  let timingDetail = monthLabel(Math.max(month, 1));
-  if (month < 1) { timing = 'Not started'; timingDetail = `Month 1 is ${monthLabel(1)}`; }
-  if (month > 36) { timing = 'Finished'; timingDetail = 'The 36 months are up'; }
+  const now = currentMonth();
+  let timing = `Month ${now} of 36`;
+  let timingDetail = monthLabel(Math.max(now, 1));
+  if (now < 1) { timing = 'Not started'; timingDetail = `Month 1 is ${monthLabel(1)}`; }
+  if (now > 36) { timing = 'Finished'; timingDetail = 'The 36 months are up'; }
   const stat = (big, small) => el('div', { class: 'stat' }, el('b', { text: big }), el('span', { text: small }));
   $('stats').replaceChildren(
     stat(timing, timingDetail),
@@ -255,17 +471,6 @@ function renderStats() {
     stat(`${passed} / ${core.length}`, 'core exams passed'),
     stat(next ? next.exam : 'All passed', next ? `next exam, target ${monthLabel(next.month)}` : 'every core exam is done'),
   );
-}
-
-function renderCards() {
-  $('cards').replaceChildren(...data.phases.map((phase) => {
-    const videos = phase.topics.reduce((sum, topic) => sum + topic.videos.length, 0);
-    return el('button', { class: 'card', type: 'button', style: `--c:${color(phase)}`, onclick: () => openPanel(phase.id) },
-      el('span', { class: 'card-top' }, el('i', { class: 'swatch' }), `Phase ${phase.n} · M${phase.start}–${phase.end}`),
-      el('strong', { text: phase.title }),
-      el('small', { text: `${topicsDone(phase)} of ${phase.topics.length} topics · ${videos} free courses` }),
-      el('span', { class: 'meter' }, el('i', { style: `width:${phasePct(phase)}%` })));
-  }));
 }
 
 function renderLadder() {
@@ -286,6 +491,27 @@ function renderLadder() {
   $('ladder').replaceChildren(head, body);
 }
 
+function renderNinety() {
+  $('ninety-list').replaceChildren(...data.ninety.map((step, i) => el('li', {},
+    el('input', {
+      class: 'check', type: 'checkbox', 'aria-label': `Done: ${step.week}`, checked: isDone(`n:${i}`),
+      onchange: (event) => setDone(`n:${i}`, event.target.checked),
+    }),
+    el('div', {}, el('b', { text: step.week }), el('p', { text: step.do }), el('small', { text: `You keep: ${step.out}` })))));
+}
+
+function renderStatic() {
+  $('rules').replaceChildren(...data.rules.map((rule) => el('li', { text: rule })));
+  $('budget-table').replaceChildren(
+    el('thead', {}, el('tr', {}, ...['Item', 'Cost', 'Notes'].map((label) => el('th', { scope: 'col', text: label })))),
+    el('tbody', {}, ...data.budget.map((row) => el('tr', {},
+      el('td', { text: row.item }), el('td', { class: 'num', text: row.cost }), el('td', { class: 'cost-note', text: row.note })))),
+  );
+  $('risks').replaceChildren(...data.risks.map((risk) => el('div', {}, el('strong', { text: risk.title }), el('p', { text: risk.fix }))));
+}
+
+/* Detail panel */
+
 function videoUrl(video) {
   return video.kind === 'playlist'
     ? `https://www.youtube.com/playlist?list=${video.id}`
@@ -298,7 +524,7 @@ function embedUrl(video) {
     : `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1`;
 }
 
-function renderVideo(video) {
+function renderVideo(video, first) {
   const card = el('div', { class: 'vid' });
   const play = el('button', {
     class: 'linkish', type: 'button', text: 'Play here',
@@ -315,8 +541,8 @@ function renderVideo(video) {
   card.append(
     el('img', { src: video.thumb, alt: '', loading: 'lazy', width: 112, height: 63 }),
     el('div', {},
-      el('div', { class: 'vid-title', text: video.title }),
-      el('div', { class: 'vid-by', text: `${video.kind === 'playlist' ? 'Playlist' : 'Video'} · ${video.by}` }),
+      el('div', { class: 'vid-title' }, first ? el('span', { class: 'start', text: 'START HERE' }) : null, video.title),
+      el('div', { class: 'vid-by', text: `${formatLength(video)} · ${video.by}` }),
       video.note ? el('div', { class: 'vid-note', text: video.note }) : null,
       el('div', { class: 'vid-actions' }, play,
         el('a', { class: 'linkish', href: videoUrl(video), target: '_blank', rel: 'noopener', text: 'Open on YouTube ↗' }))),
@@ -345,7 +571,13 @@ function renderTopic(topic) {
           topic.weak ? el('span', { class: 'note-pill', text: 'Thin coverage' }) : null,
           `${count} free ${count === 1 ? 'course' : 'courses'}`)),
       el('span', { class: 'chev', 'aria-hidden': 'true', text: '›' }))));
-  if (expanded) row.append(el('div', { class: 'vids' }, ...topic.videos.map(renderVideo)));
+  if (expanded) {
+    row.append(el('div', { class: 'topic-detail' },
+      el('div', {}, el('p', { class: 'detail-label', text: 'What to learn' }), el('ul', { class: 'learn' }, ...topic.learn.map((line) => el('li', { text: line })))),
+      el('div', {}, el('p', { class: 'detail-label', text: 'Free courses' }), el('div', { class: 'vids' }, ...topic.videos.map((video, i) => renderVideo(video, i === 0)))),
+      el('div', { class: 'callout' }, el('p', { class: 'detail-label', text: 'Try it' }), topic.lab),
+      el('div', { class: 'callout' }, el('p', { class: 'detail-label', text: 'Check yourself' }), topic.check)));
+  }
   return row;
 }
 
@@ -359,27 +591,58 @@ function checkItem(key, label, title, detail) {
     el('div', {}, el('strong', { text: title }), el('p', { text: detail })));
 }
 
+function phaseLinks(phases, empty) {
+  if (!phases.length) return el('p', { class: 'sec-note', text: empty });
+  return el('div', { class: 'links' }, ...phases.map((phase) => el('button', {
+    class: 'result', type: 'button', style: `--c:${color(phase)}`, onclick: () => openPanel(phase.id),
+  }, el('i', { class: 'swatch' }), phase.title)));
+}
+
+function renderOverview(phase) {
+  const stats = phaseVideoStats(phase);
+  const core = phase.certs.filter((cert) => cert.core).length;
+  const fact = (big, small) => el('div', {}, el('b', { text: big }), el('span', { text: small }));
+  return [
+    el('p', { class: 'why', text: phase.why }),
+    el('div', { class: 'facts' },
+      fact(`${phase.end - phase.start + 1} months`, `${monthLabel(phase.start)} – ${monthLabel(phase.end)}`),
+      fact(String(phase.topics.length), 'topics'),
+      fact(String(stats.courses), `free courses (${stats.playlists} playlists)`),
+      fact(`${stats.hours} h`, 'of single videos, plus the playlists'),
+      fact(String(core), core === 1 ? 'core exam' : 'core exams'),
+      fact(phase.specialty, 'deep-dive idea')),
+    el('h3', { text: "You're done when you can" }),
+    ...phase.done.map((line, i) => el('label', { class: 'item' },
+      el('input', { class: 'check', type: 'checkbox', checked: isDone(`g:${phase.id}:${i}`), onchange: (event) => setDone(`g:${phase.id}:${i}`, event.target.checked) }),
+      el('span', { text: line }))),
+    el('h3', { text: 'Builds on' }),
+    phaseLinks(phase.needs.map(phaseById), 'Your existing Senior DevOps, AWS SAA and CKA experience.'),
+    el('h3', { text: 'Unlocks' }),
+    phaseLinks(unlocks(phase), 'This is the destination.'),
+    el('h3', { text: 'Security thread' }),
+    el('p', { class: 'sec-note', text: phase.security }),
+    el('h3', { text: 'Toolbelt' }),
+    el('ul', { class: 'tools' }, ...phase.tools.split(', ').map((tool) => el('li', { text: tool }))),
+  ];
+}
+
 function renderTabBody(phase) {
+  if (activeTab === 'overview') return renderOverview(phase);
   if (activeTab === 'exams') {
-    return [...phase.certs.map((cert) => checkItem(certKey(cert), `Passed ${cert.name}`, cert.name,
-      `${cert.exam} · ${cert.cost} · ${cert.core ? 'Core' : 'Optional'} · target M${cert.month}, ${monthLabel(cert.month)}. ${cert.why}`))];
+    return [
+      ...phase.certs.map((cert) => checkItem(certKey(cert), `Passed ${cert.name}`, cert.name,
+        `${cert.exam} · ${cert.cost} · ${cert.core ? 'Core' : 'Optional'} · target M${cert.month}, ${monthLabel(cert.month)}. ${cert.why}`)),
+      el('div', { class: 'callout', style: 'margin-top:12px', text: phase.certNote }),
+    ];
   }
   if (activeTab === 'projects') {
     return phase.projects.map((project) => checkItem(`p:${phase.id}:${project.name}`, `Shipped ${project.name}`,
       project.name, `${project.level} · proves ${project.proves.toLowerCase()}. ${project.detail}`));
   }
-  if (activeTab === 'more') {
-    const needs = phase.needs.map((id) => phaseById(id).title).join(', ');
-    return [
-      el('h3', { text: "You're done when you can" }),
-      el('ul', { class: 'plain' }, ...phase.done.map((line) => el('li', { text: line }))),
-      el('h3', { text: 'Reading and labs' }),
-      el('ul', { class: 'plain' }, ...phase.reading.map((line) => el('li', { text: line }))),
-      el('h3', { text: 'Security thread' }),
-      el('p', { class: 'sec-note', text: phase.security }),
-      el('h3', { text: 'Builds on' }),
-      el('p', { class: 'sec-note', text: needs || 'Your existing Senior DevOps, AWS SAA and CKA experience.' }),
-    ];
+  if (activeTab === 'reading') {
+    return phase.reading.map((item) => el('div', { class: 'item plain-item' },
+      el('strong', { text: item.title }), item.free ? el('span', { class: 'free', text: 'Free' }) : null,
+      el('p', { text: item.how })));
   }
   return phase.topics.map(renderTopic);
 }
@@ -389,7 +652,7 @@ function renderPanel() {
   if (!phase) return;
   const panel = $('panel');
   const scroll = panel.scrollTop;
-  const tabs = [['topics', 'Topics & courses'], ['exams', 'Exams'], ['projects', 'Projects'], ['more', 'Goals & reading']];
+  const tabs = [['overview', 'Overview'], ['topics', 'Topics & courses'], ['exams', 'Exams'], ['projects', 'Projects'], ['reading', 'Reading']];
   panel.style.setProperty('--c', color(phase));
   panel.replaceChildren(
     el('div', { class: 'panel-head' },
@@ -409,7 +672,7 @@ function renderPanel() {
   panel.scrollTop = scroll;
 }
 
-function openPanel(phaseId, topicId = null, tab = 'topics') {
+function openPanel(phaseId, topicId = null, tab = 'overview') {
   const phase = phaseById(phaseId);
   if (!phase) return;
   if (!selectedPhase) lastFocus = document.activeElement;
@@ -421,9 +684,12 @@ function openPanel(phaseId, topicId = null, tab = 'topics') {
   $('scrim').hidden = false;
   renderPanel();
   $('panel').scrollTop = 0;
-  highlight(phaseId);
+  highlight();
   history.replaceState(null, '', `#${phaseId}${topicId ? `/${topicId}` : ''}`);
-  if (topicId) document.getElementById(`topic-${topicId}`)?.scrollIntoView({ block: 'center' });
+  if (topicId) {
+    const row = document.getElementById(`topic-${topicId}`);
+    if (row) $('panel').scrollTop = row.offsetTop - $('panel').querySelector('.panel-head').offsetHeight - 8;
+  }
   $('panel').focus({ preventScroll: true });
 }
 
@@ -431,37 +697,39 @@ function closePanel() {
   selectedPhase = null;
   $('panel').hidden = true;
   $('scrim').hidden = true;
-  highlight(null);
+  highlight();
   history.replaceState(null, '', location.pathname + location.search);
   if (lastFocus && document.contains(lastFocus)) lastFocus.focus();
 }
 
 function refresh() {
   renderStats();
-  renderCards();
+  renderNext();
   renderLadder();
+  renderNinety();
   syncMap();
   if (selectedPhase) renderPanel();
 }
 
 function runSearch(raw) {
   const query = raw.trim().toLowerCase();
-  const status = $('search-status');
-  if (!query) {
-    document.querySelectorAll('.station-g').forEach((group) => group.classList.remove('miss', 'hit'));
-    status.textContent = '';
-    return;
-  }
-  let hits = 0;
+  const results = $('results');
+  document.querySelectorAll('.station-g, .node-topic').forEach((node) => node.classList.remove('miss', 'hit'));
+  if (!query) { results.replaceChildren(); return; }
+  const hits = [];
   data.phases.forEach((phase) => phase.topics.forEach((topic) => {
-    const haystack = [topic.title, ...topic.videos.flatMap((video) => [video.title, video.by, video.note])].join(' ').toLowerCase();
+    const haystack = [topic.title, topic.short, topic.lab, ...topic.learn, ...topic.videos.flatMap((video) => [video.title, video.by, video.note])].join(' ').toLowerCase();
     const match = haystack.includes(query);
-    if (match) hits += 1;
-    const group = document.querySelector(`.station-g[data-topic="${topic.id}"]`);
-    group.classList.toggle('miss', !match);
-    group.classList.toggle('hit', match);
+    if (match) hits.push({ phase, topic });
+    document.querySelectorAll(`[data-topic="${topic.id}"]`).forEach((node) => {
+      node.classList.toggle('miss', !match);
+      node.classList.toggle('hit', match);
+    });
   }));
-  status.textContent = hits ? `${hits} matching ${hits === 1 ? 'topic' : 'topics'} highlighted on the map. Select one to see its courses.` : `No topics match "${raw.trim()}".`;
+  if (!hits.length) { results.replaceChildren(`No topics match "${raw.trim()}".`); return; }
+  results.replaceChildren(...hits.slice(0, 12).map(({ phase, topic }) => el('button', {
+    class: 'result', type: 'button', style: `--c:${color(phase)}`, onclick: () => openPanel(phase.id, topic.id, 'topics'),
+  }, el('i', { class: 'swatch' }), topic.short)), hits.length > 12 ? `and ${hits.length - 12} more` : '');
 }
 
 function exportProgress() {
@@ -495,13 +763,18 @@ function labelTheme() {
 
 function openFromHash() {
   const [phaseId, topicId] = decodeURIComponent(location.hash.slice(1)).split('/');
-  if (phaseId && phaseById(phaseId)) openPanel(phaseId, topicId || null);
+  if (phaseId && phaseById(phaseId)) openPanel(phaseId, topicId || null, topicId ? 'topics' : 'overview');
 }
 
 function bindEvents() {
   $('search').addEventListener('input', (event) => runSearch(event.target.value));
-  $('optional').addEventListener('change', syncMap);
+  $('optional').addEventListener('change', () => setMonth(month));
   $('scrim').addEventListener('click', closePanel);
+  $('view-skill').addEventListener('click', () => setView('skill'));
+  $('view-time').addEventListener('click', () => setView('time'));
+  $('play').addEventListener('click', togglePlay);
+  $('month').addEventListener('input', (event) => { stopPlay(); setMonth(Number(event.target.value)); });
+  $('today').addEventListener('click', () => { stopPlay(); setMonth(currentMonth()); });
   $('export').addEventListener('click', exportProgress);
   $('import').addEventListener('change', (event) => {
     if (event.target.files[0]) importProgress(event.target.files[0]);
@@ -534,8 +807,14 @@ async function init() {
   }
   labelTheme();
   bindEvents();
-  renderMap();
+  renderSkillMap();
+  renderTimeline();
+  renderStatic();
   refresh();
+  setMonth(currentMonth());
+  let savedView = 'skill';
+  try { savedView = localStorage.getItem(VIEW_KEY) || 'skill'; } catch (e) { /* default view */ }
+  setView(savedView === 'time' ? 'time' : 'skill');
   openFromHash();
 }
 
