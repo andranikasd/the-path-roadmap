@@ -16,14 +16,21 @@
 <a class="skip" href="#stage">Skip to the map</a>
 
 <div id="map-view">
-  <div class="stage" id="stage" tabindex="0" role="application" aria-label="Roadmap world. Drag to move, scroll or pinch to zoom, Tab through nodes.">
-    <canvas id="fx" aria-hidden="true"></canvas>
-    <div class="world" id="world"></div>
+  <div class="stage" id="stage" tabindex="0" role="application" aria-label="The Path mountain. Drag to orbit, scroll or pinch to zoom, Tab through phases and topics. The Plan view lists everything as text.">
+    <canvas id="gl" aria-hidden="true"></canvas>
+    <div class="labels" id="labels"></div>
   </div>
 
   <header class="hud hud-top">
-    <div class="hud-brand"><strong>The Path</strong><span id="hud-progress"></span></div>
-    <button class="hud-next" id="hud-next" type="button"></button>
+    <section class="now" aria-label="What to do next">
+      <p class="now-status"><strong>The Path</strong> <span id="now-status"></span></p>
+      <p class="now-title" id="now-title"></p>
+      <p class="now-detail" id="now-detail"></p>
+      <div class="now-actions">
+        <button class="now-go" id="now-go" type="button"></button>
+        <button class="linkish" id="now-topic" type="button">Open topic</button>
+      </div>
+    </section>
     <div class="hud-actions">
       <button class="hud-btn" id="open-search" type="button" aria-label="Search everything"><span>Search</span><kbd>/</kbd></button>
       <button class="hud-btn" id="fit" type="button">Overview</button>
@@ -32,11 +39,11 @@
     </div>
   </header>
 
-  <canvas class="minimap" id="minimap" width="360" height="170" aria-hidden="true"></canvas>
-  <p class="hint-keys" id="hint-keys">Drag to explore · Scroll to zoom · Drag a phase to move it · Click anything</p>
+  <div class="rail" id="rail" hidden></div>
+  <p class="hint-keys" id="hint-keys">Drag to orbit · Scroll to zoom · Right-drag to pan · Click anything · ▶ climbs the mountain</p>
 
   <div class="dock" role="group" aria-label="Journey through the 36 months">
-    <button class="dock-play" id="play" type="button" aria-label="Start the journey">▶</button>
+    <button class="dock-play" id="play" type="button" aria-label="Climb the mountain">▶</button>
     <div class="dock-main">
       <p class="dock-text" id="dock-text"></p>
       <div class="gantt" id="gantt" aria-hidden="true"></div>
@@ -69,6 +76,10 @@
   </header>
   <main>
     <section class="wrap stats" aria-label="Your progress" id="stats"></section>
+    <section class="wrap" aria-labelledby="phases-title">
+      <div class="section-head"><h2 id="phases-title">All phases</h2><p class="hint">Every topic, course, lab and exam, without the 3D map.</p></div>
+      <ul class="phase-list" id="phase-list"></ul>
+    </section>
 <section class="wrap" id="ninety" aria-labelledby="ninety-title">
     <div class="section-head">
       <h2 id="ninety-title">Your first 90 days</h2>
@@ -160,6 +171,6 @@
     <ul id="palette-list" role="listbox"></ul>
   </div>
 </div>
-<script src="app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
