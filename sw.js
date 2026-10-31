@@ -1,6 +1,6 @@
 // Network first, so updates appear without a hard refresh. The cache only answers when offline.
-const CACHE = 'the-path-v1';
-const FILES = ['./', 'index.html', 'app.js', 'styles.css', 'map.css', 'data/roadmap.json', 'icon.svg', 'manifest.webmanifest'];
+const CACHE = 'the-path-v2';
+const FILES = ['./', 'index.html', 'app.js', 'styles.css', 'map.css', 'skin.css', 'fonts/inter.woff2', 'fonts/fraunces.woff2', 'data/roadmap.json', 'icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES)).then(() => self.skipWaiting()));

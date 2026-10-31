@@ -698,12 +698,12 @@ async function importProgress(file) {
   }
 }
 
-function currentTheme() {
-  return document.documentElement.dataset.theme || 'dark';
+function currentSkin() {
+  return document.documentElement.dataset.skin || 'paper';
 }
 
 function labelTheme() {
-  $('theme').textContent = currentTheme() === 'dark' ? 'Light' : 'Dark';
+  $('skin').value = currentSkin();
 }
 
 function openFromHash() {
@@ -756,11 +756,12 @@ function bindEvents() {
     refresh();
     toast('Progress cleared', () => { progress = before; saveProgress(); refresh(); });
   });
-  $('theme').addEventListener('click', () => {
-    const next = currentTheme() === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* not remembered */ }
-    labelTheme();
+  $('skin').addEventListener('change', (event) => {
+    const skin = event.target.value;
+    document.documentElement.dataset.skin = skin;
+    document.documentElement.dataset.theme = skin === 'midnight' ? 'dark' : 'light';
+    try { localStorage.setItem(THEME_KEY, skin); } catch (e) { /* not remembered */ }
+    drawLinks();
   });
   window.addEventListener('resize', drawLinks);
   new ResizeObserver(drawLinks).observe($('road'));
