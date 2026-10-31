@@ -1,8 +1,6 @@
 'use strict';
 
 const STORE_KEY = 'the-path-progress-v1';
-const THEME_KEY = 'the-path-theme';
-const OPEN_KEY = 'the-path-open';
 const BACKUP_KEY = 'the-path-backup-at';
 const BACKUP_DAYS = 14;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -65,13 +63,15 @@ function saveProgress() {
 const isDone = (key) => Boolean(progress.items[key]);
 
 function setDone(key, value) {
+  const xpBefore = xpTotal();
   if (value) progress.items[key] = true;
   else delete progress.items[key];
   saveProgress();
   const whole = value && key.startsWith('t:') && celebrate(key.slice(2));
   refresh();
-  if (/^[tvlsc]:/.test(key)) {
-    toast(whole || (value ? 'Saved' : 'Unticked'), () => setDone(key, !value));
+  const gained = xpTotal() - xpBefore;
+  if (/^[tvlscpgr]:/.test(key)) {
+    toast(whole || (gained > 0 ? `+${gained} XP` : value ? 'Saved' : 'Unticked'), () => setDone(key, !value));
   }
 }
 
@@ -318,7 +318,6 @@ function showMap() {
   $('plan-view').hidden = true;
   $('library-view').hidden = true;
   $('map-view').hidden = false;
-  drawLinks();
 }
 
 
@@ -472,6 +471,7 @@ function renderPanel() {
           el('h2', { id: 'panel-title', text: phase.title })),
         el('button', { class: 'close', type: 'button', 'aria-label': 'Close panel', text: '×', onclick: closePanel })),
       el('p', { class: 'panel-tag', text: phase.tagline }),
+      phaseUnlocked(phase) ? null : el('p', { class: 'lock-note', text: `Locked until ${lockText(phase)}. You can still read everything and tick what you already know.` }),
       el('div', { class: 'meter', role: 'img', 'aria-label': `${phasePct(phase)}% of topics done` }, el('i', { style: `width:${phasePct(phase)}%` })),
       el('div', { class: 'tabs', role: 'tablist' }, ...tabs.map(([id, label]) => el('button', {
         class: 'tab', type: 'button', role: 'tab', 'aria-selected': String(activeTab === id), text: label,
@@ -495,7 +495,6 @@ function openPanel(phaseId, topicId = null, tab = 'overview') {
   document.body.classList.add('panel-open');
   history.replaceState(null, '', `#${phaseId}${topicId ? `/${topicId}` : ''}`);
   if (topicId) {
-    revealPhase(phaseId);
     selectTopic(topicId);
     const row = document.getElementById(`topic-${topicId}`);
     if (row) $('panel').scrollTop = row.offsetTop - $('panel').querySelector('.panel-head').offsetHeight - 8;
@@ -698,14 +697,6 @@ async function importProgress(file) {
   }
 }
 
-function currentSkin() {
-  return document.documentElement.dataset.skin || 'paper';
-}
-
-function labelTheme() {
-  $('skin').value = currentSkin();
-}
-
 function openFromHash() {
   const [phaseId, topicId] = decodeURIComponent(location.hash.slice(1)).split('/');
   if (phaseId && phaseById(phaseId)) {
@@ -716,9 +707,8 @@ function openFromHash() {
 }
 
 function bindEvents() {
-  $('optional').addEventListener('change', refresh);
-  $('expand-all').addEventListener('click', () => setOpen(openPhases.size === data.phases.length ? new Set() : new Set(data.phases.map((phase) => phase.id))));
-  $('hide-finished').addEventListener('change', (event) => { hideFinished = event.target.checked; renderRoad(); });
+  $('optional').addEventListener('change', () => { buildTree(); refresh(); });
+  $('quest-jump').addEventListener('click', jumpToQuest);
   $('open-backup').addEventListener('click', () => $('backup').showModal());
   $('backup-close').addEventListener('click', () => $('backup').close());
   $('copy-link').addEventListener('click', copySyncLink);
@@ -756,15 +746,13 @@ function bindEvents() {
     refresh();
     toast('Progress cleared', () => { progress = before; saveProgress(); refresh(); });
   });
-  $('skin').addEventListener('change', (event) => {
-    const skin = event.target.value;
-    document.documentElement.dataset.skin = skin;
-    document.documentElement.dataset.theme = skin === 'midnight' ? 'dark' : 'light';
-    try { localStorage.setItem(THEME_KEY, skin); } catch (e) { /* not remembered */ }
-    drawLinks();
-  });
-  window.addEventListener('resize', drawLinks);
-  new ResizeObserver(drawLinks).observe($('road'));
+  new ResizeObserver(() => {
+    const width = $('tree').clientWidth;
+    if (!width || width === treeWidth) return;
+    buildTree();
+    renderRoad();
+    if (openTopic) centerOn(`node-${openTopic}`, false);
+  }).observe($('tree'));
   window.addEventListener('hashchange', () => { readSyncLink(); openFromHash(); });
   document.addEventListener('keydown', (event) => {
     const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName) && document.activeElement.type !== 'checkbox';
@@ -851,14 +839,14 @@ function renderNow() {
     el('span', { class: away < 0 ? 'warn' : '', text: examText }),
   );
   if (!found) {
-    $('action').replaceChildren(el('h2', { text: 'Every topic is done.' }), el('p', { text: 'Nothing left on the road. Check the exams and projects.' }));
+    $('action').replaceChildren(el('h2', { text: 'Every topic is done.' }), el('p', { text: 'Every skill is mastered. Check the exams and projects.' }));
     $('week-card').replaceChildren();
     return;
   }
   const action = nextAction(found);
   $('action').style.setProperty('--c', color(found.phase));
   $('action').replaceChildren(
-    el('p', { class: 'action-kicker' }, el('i', { class: 'swatch' }), `Do this next · ${found.topic.short}`),
+    el('p', { class: 'action-kicker' }, el('i', { class: 'swatch' }), `Current quest · ${found.topic.short}`),
     el('h2', { text: action.title }),
     el('p', { class: 'action-detail', text: action.detail }),
     el('ol', { class: 'stepper', 'aria-label': `Step ${action.n} of 3` }, ...['Watch', 'Lab', 'Check'].map((label, i) => el('li', {
@@ -866,6 +854,7 @@ function renderNow() {
     }))),
     el('div', { class: 'now-actions' },
       el('button', { class: 'now-go', type: 'button', text: action.cta, onclick: action.run }),
+      
       el('button', { class: 'ghost', type: 'button', text: `${action.finishLabel} ✓`, onclick: action.finish })),
   );
   renderWeek(found, exam);
@@ -889,48 +878,257 @@ function renderWeek(found, exam) {
   if (exam && exam.month - Math.max(currentMonth(), 1) <= 6 && !isDone(certKey(exam))) {
     items.unshift(task('This week', `Book ${exam.exam} for ${monthLabel(exam.month)}`, `k:${exam.exam}`, () => openPanel(exam.phase.id, null, 'exams')));
   }
-  $('week-card').replaceChildren(el('h2', { text: 'This week' }), el('ul', { class: 'week-list' }, ...items));
+  $('week-card').replaceChildren(el('h2', { text: 'Quest log: this week' }), el('ul', { class: 'week-list' }, ...items));
 }
 
-/* The 2D roadmap */
+/* Skill tree: unlock rules */
 
 const ROWS = [['systems'], ['network', 'code'], ['cloud', 'k8s'], ['security', 'data'], ['principal']];
-let hideFinished = false;
-let openPhases = null;
+const RANKS = ['Senior DevOps', 'Systems Adept', 'Network Adept', 'Code Adept', 'Cloud Architect', 'Cluster Architect', 'Security Warden', 'Reliability Lead', 'Principal Engineer'];
+const XP_PER_LEVEL = 400;
 
-function loadOpen() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(OPEN_KEY));
-    if (Array.isArray(saved)) return new Set(saved);
-  } catch (e) { /* fall through to the default */ }
-  return new Set(data.phases.filter((phase) => phaseState(phase) === 'now' || phaseState(phase) === 'overdue').map((phase) => phase.id));
+// A prerequisite needs as many topics as the schedule expects by the time this phase starts.
+function needCount(need, phase) {
+  const share = Math.min(1, Math.max(0, (phase.start - need.start) / (need.end + 1 - need.start)));
+  return share ? Math.max(1, Math.floor(share * need.topics.length)) : 0;
 }
 
-function setOpen(ids) {
-  openPhases = ids;
-  try { localStorage.setItem(OPEN_KEY, JSON.stringify([...ids])); } catch (e) { /* not remembered */ }
-  renderRoad();
+function missingFor(phase) {
+  return phase.needs.map(phaseById)
+    .map((need) => ({ need, count: needCount(need, phase) }))
+    .filter(({ need, count }) => topicsDone(need) < count);
 }
 
-function togglePhase(id) {
-  const ids = new Set(openPhases);
-  if (ids.has(id)) ids.delete(id); else ids.add(id);
-  setOpen(ids);
+const phaseUnlocked = (phase) => !missingFor(phase).length;
+
+function lockText(phase) {
+  return missingFor(phase).map(({ need, count }) => `${need.short} ${topicsDone(need)}/${count}`).join(', ');
 }
 
-function revealPhase(id) {
-  if (!openPhases.has(id)) setOpen(new Set([...openPhases, id]));
+function topicState(phase, topic) {
+  if (isDone(`t:${topic.id}`)) return 'mastered';
+  if (!phaseUnlocked(phase) && topicStep(topic) === 0) return 'locked';
+  if (topicStep(topic) > 0) return 'active';
+  const open = phase.topics.filter((item) => !isDone(`t:${item.id}`)).slice(0, 2);
+  return open.includes(topic) ? 'available' : 'locked';
 }
 
-function phaseState(phase) {
-  const now = clampMonth(currentMonth());
-  if (topicsDone(phase) === phase.topics.length) return 'done';
-  if (inFocus(phase, now)) return 'now';
-  if (phase.start > now && phase.start - now <= 3) return 'soon';
-  if (phase.start > now) return 'later';
-  return practising(phase, now) ? 'ongoing' : 'overdue';
+function phaseEntries(phase) {
+  const showOptional = $('optional').checked;
+  return [
+    ...phase.topics.map((topic, i) => ({ type: 'topic', topic, at: topicMonth(phase, i) + 0.1 * i / phase.topics.length })),
+    ...phase.certs.filter((cert) => cert.core || showOptional).map((cert) => ({ type: 'exam', cert, at: cert.month + 0.95 })),
+  ].sort((x, y) => x.at - y.at);
 }
-const STATE_LABEL = { done: 'Done', now: 'In focus', soon: 'Up next', later: 'Later', ongoing: 'Keep practising', overdue: 'Overdue' };
+
+function topicMonth(phase, i) {
+  return Math.floor(phase.start + ((i + 0.5) / phase.topics.length) * (phase.end + 1 - phase.start));
+}
+
+function examState(phase, cert, entries) {
+  if (isDone(certKey(cert))) return 'mastered';
+  const before = entries.slice(0, entries.findIndex((entry) => entry.cert === cert)).filter((entry) => entry.type === 'topic');
+  return phaseUnlocked(phase) && before.every((entry) => isDone(`t:${entry.topic.id}`)) ? 'available' : 'locked';
+}
+
+function xpTotal() {
+  let xp = 0;
+  allTopics().forEach(({ topic }) => {
+    if (isDone(`t:${topic.id}`)) xp += 100;
+    else xp += [0, 25, 65, 85][topicStep(topic)];
+  });
+  Object.keys(progress.items).forEach((key) => {
+    if (key.startsWith('c:')) xp += 300;
+    else if (key.startsWith('p:')) xp += 150;
+    else if (key.startsWith('g:')) xp += 25;
+    else if (key.startsWith('r:')) xp += 5;
+    else if (key.startsWith('n:')) xp += 10;
+  });
+  return xp;
+}
+
+const levelOf = (xp) => Math.floor(xp / XP_PER_LEVEL) + 1;
+
+function renderHud() {
+  const xp = xpTotal();
+  const level = levelOf(xp);
+  const mastered = data.phases.filter((phase) => topicsDone(phase) === phase.topics.length).length;
+  $('level').textContent = level;
+  $('rank').textContent = RANKS[mastered];
+  $('xp-fill').style.width = `${((xp % XP_PER_LEVEL) / XP_PER_LEVEL) * 100}%`;
+  $('xp-text').textContent = `${xp % XP_PER_LEVEL} / ${XP_PER_LEVEL} XP`;
+  if (renderHud.level && level > renderHud.level) levelUp(level);
+  renderHud.level = level;
+}
+
+function levelUp(level) {
+  const node = $('levelup');
+  node.replaceChildren(el('small', { text: 'Level up' }), el('b', { text: level }));
+  node.classList.remove('show');
+  void node.offsetWidth;
+  node.classList.add('show');
+}
+
+/* Skill tree: layout, built once per width, then only states change */
+
+const treeNodes = new Map();
+let treeEdges = [];
+let treeWidth = 0;
+let treeSynced = false;
+
+function treeButton(id, cls, label, onclick, style) {
+  const node = el('button', { class: `sk ${cls}`, id, type: 'button', style, onclick }, el('span', { class: 'sk-core', 'aria-hidden': 'true' }));
+  if (label) node.append(el('span', { class: 'sk-label' }, el('b', { text: label.title }), el('small', { text: label.sub })));
+  return node;
+}
+
+function buildTree() {
+  const stage = $('tree');
+  const width = stage.clientWidth;
+  if (!width) return;
+  treeWidth = width;
+  const narrow = width < 640;
+  const rows = narrow ? data.phases.map((phase) => [phase.id]) : ROWS;
+  const colWidth = narrow ? width : width / 2;
+  const STEP = narrow ? 70 : 74;
+  const swing = narrow ? 52 : 74;
+  const heightOf = (id) => (phaseEntries(phaseById(id)).length * STEP) + 150;
+  const gap = narrow ? 56 : 84;
+  const rowHeights = rows.map((row) => Math.max(...row.map(heightOf)));
+  const total = rowHeights.reduce((sum, h) => sum + h + gap, 60);
+  const parts = [];
+  const keys = {};
+  const entry = {};
+  const rowIndex = {};
+  treeNodes.clear();
+  treeEdges = [];
+  let bottom = total - 30;
+  rows.forEach((row, r) => {
+    row.forEach((id, c) => {
+      const phase = phaseById(id);
+      rowIndex[id] = r;
+      const cx = row.length === 1 ? width / 2 : colWidth * (c + 0.5);
+      const entries = phaseEntries(phase);
+      let prev = null;
+      const place = (x, y) => `left:${x}px;top:${y}px;--c:${color(phase)}`;
+      entries.forEach((item, i) => {
+        const side = i % 2 ? 1 : -1;
+        const x = cx + side * swing * (0.55 + 0.45 * Math.abs(Math.sin(i * 1.7 + phase.n)));
+        const y = bottom - 26 - i * STEP;
+        const isTopic = item.type === 'topic';
+        const nodeId = isTopic ? `node-${item.topic.id}` : `boss-${phase.id}-${i}`;
+        const label = isTopic
+          ? { title: item.topic.short, sub: monthLabel(topicMonth(phase, phase.topics.indexOf(item.topic))) }
+          : { title: item.cert.exam, sub: `${monthLabel(item.cert.month)} · ${item.cert.cost}` };
+        const node = treeButton(nodeId, `${isTopic ? 'skill' : 'boss'} ${side > 0 ? 'right' : 'left'}`, label,
+          isTopic ? () => focusTopic(phase.id, item.topic.id) : () => openPanel(phase.id, null, 'exams'), place(x, y));
+        parts.push(node);
+        treeNodes.set(nodeId, { node, phase, item, x, y, entries });
+        if (prev) treeEdges.push({ from: prev, to: nodeId, c: phase.n, inner: true });
+        else entry[id] = nodeId;
+        prev = nodeId;
+      });
+      const keyId = `key-${phase.id}`;
+      const ky = bottom - 26 - entries.length * STEP - 18;
+      const key = treeButton(keyId, 'keystone', null, () => focusPhase(phase.id), place(cx, ky));
+      key.querySelector('.sk-core').textContent = phase.n;
+      key.setAttribute('aria-label', `Phase ${phase.n}: ${phase.title}`);
+      parts.push(key, el('button', { class: 'banner', type: 'button', style: `left:${cx}px;top:${ky - 44}px;--c:${color(phase)}`, id: `banner-${id}`, onclick: () => focusPhase(phase.id) },
+        el('b', { text: phase.short }), el('small', { 'data-sub': id })));
+      treeNodes.set(keyId, { node: key, phase, x: cx, y: ky, keystone: true });
+      if (prev) treeEdges.push({ from: prev, to: keyId, c: phase.n, inner: true });
+      keys[id] = keyId;
+    });
+    bottom -= rowHeights[r] + gap;
+  });
+  data.phases.forEach((phase) => {
+    phase.needs
+      .filter((need) => !phase.needs.some((other) => other !== need && ancestors(other).has(need)))
+      .forEach((need) => treeEdges.push({ from: keys[need], to: entry[phase.id], c: phaseById(need).n, needId: need, phaseId: phase.id, skip: rowIndex[phase.id] - rowIndex[need] > 1 }));
+  });
+  const edgeSvg = treeEdges.map((edge, i) => {
+    const a = treeNodes.get(edge.from);
+    const b = treeNodes.get(edge.to);
+    let d;
+    const top = a.y - 92; // above the phase title
+    if (edge.skip) {
+      const side = a.x > width / 2 ? width - 6 : 6;
+      d = `M${a.x} ${top} C${side} ${top - 40} ${side} ${b.y + 90} ${b.x} ${b.y}`;
+    } else {
+      const mid = (top + b.y) / 2;
+      d = edge.inner ? `M${a.x} ${a.y} L${b.x} ${b.y}` : `M${a.x} ${top} C${a.x} ${mid} ${b.x} ${mid} ${b.x} ${b.y}`;
+    }
+    return `<path id="edge-${i}" data-link="${edge.inner ? 'inner' : 'phase'}" class="edge" style="--c:var(--s${edge.c})" d="${d}"/>`;
+  }).join('');
+  stage.style.height = `${total}px`;
+  stage.replaceChildren(...parts);
+  stage.insertAdjacentHTML('afterbegin', `<svg class="edges" width="${width}" height="${total}" aria-hidden="true">${edgeSvg}</svg>`);
+  treeSynced = false;
+}
+
+function setNodeState(node, state, label, ring) {
+  const before = node.dataset.state;
+  node.dataset.state = state;
+  node.setAttribute('aria-label', label);
+  node.style.setProperty('--p', `${ring}deg`);
+  if (treeSynced && before !== state && (state === 'mastered' || before === 'locked')) {
+    node.classList.remove('pop');
+    void node.offsetWidth;
+    node.classList.add('pop');
+  }
+}
+
+const STATE_WORD = { locked: 'locked', available: 'available', active: 'in progress', mastered: 'mastered' };
+
+// Keeps the old function name: every state change in the app ends here.
+function renderRoad() {
+  if (!treeNodes.size) buildTree();
+  const quest = nextTopic();
+  treeNodes.forEach((info, id) => {
+    const { node, phase, item } = info;
+    if (info.keystone) {
+      const complete = topicsDone(phase) === phase.topics.length;
+      const state = complete ? 'mastered' : phaseUnlocked(phase) ? (topicsDone(phase) ? 'active' : 'available') : 'locked';
+      setNodeState(node, state, `Phase ${phase.n}: ${phase.title}, ${STATE_WORD[state]}`, phasePct(phase) * 3.6);
+      const sub = document.querySelector(`[data-sub="${phase.id}"]`);
+      sub.textContent = phaseUnlocked(phase) ? `${topicsDone(phase)}/${phase.topics.length} · ${monthLabel(phase.start)} – ${monthLabel(phase.end)}` : `Needs ${lockText(phase)}`;
+      $(`banner-${phase.id}`).dataset.state = state;
+    } else if (item.type === 'topic') {
+      const state = topicState(phase, item.topic);
+      setNodeState(node, state, `${item.topic.title}, ${STATE_WORD[state]}. Open details.`, state === 'mastered' ? 360 : topicStep(item.topic) * 120);
+      node.classList.toggle('quest', quest?.topic.id === item.topic.id);
+      node.classList.toggle('open', openTopic === item.topic.id);
+    } else {
+      const state = examState(phase, item.cert, info.entries);
+      setNodeState(node, state, `Exam ${item.cert.exam}, ${STATE_WORD[state]}. Open details.`, state === 'mastered' ? 360 : 0);
+    }
+  });
+  const reached = (id) => treeNodes.get(id).node.dataset.state;
+  treeEdges.forEach((edge, i) => {
+    const path = document.getElementById(`edge-${i}`);
+    let state = 'dim';
+    if (edge.inner) {
+      if (reached(edge.from) === 'mastered') state = reached(edge.to) === 'mastered' ? 'done' : 'live';
+    } else {
+      const need = phaseById(edge.needId);
+      const count = needCount(need, phaseById(edge.phaseId));
+      if (topicsDone(need) === need.topics.length) state = 'done';
+      else if (topicsDone(need) >= count) state = 'live';
+    }
+    path.setAttribute('class', `edge ${state}`);
+  });
+  treeSynced = true;
+  renderHud();
+}
+
+function centerOn(id, smooth = true) {
+  document.getElementById(id)?.scrollIntoView({ block: 'center', behavior: smooth && !window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant' });
+}
+
+function syncOptional() {
+  const showOptional = $('optional').checked;
+  document.querySelectorAll('#ladder tr.is-opt').forEach((row) => row.classList.toggle('hide', !showOptional));
+}
 
 function renderStrip() {
   const pct = (value) => ((value - 1) / TOTAL_MONTHS) * 100;
@@ -943,7 +1141,7 @@ function renderStrip() {
     el('div', { class: 'strip-years' }, ...[0, 1, 2].map((year) => el('span', { style: `left:${(year * 12 / TOTAL_MONTHS) * 100}%`, text: monthLabel(year * 12 + 1) }))),
     ...data.phases.map((phase) => el('button', {
       class: 'strip-row', type: 'button', style: `--c:${color(phase)}`, title: `${phase.title}: ${monthLabel(phase.start)} to ${monthLabel(phase.end)}`,
-      onclick: () => { revealPhase(phase.id); document.getElementById(`phase-${phase.id}`).scrollIntoView({ block: 'start' }); },
+      onclick: () => { showMap(); centerOn(`key-${phase.id}`); },
     },
     el('span', { class: 'strip-name', text: `${phase.n} ${phase.short}` }),
     el('span', { class: 'strip-track' },
@@ -955,118 +1153,9 @@ function renderStrip() {
   );
 }
 
-function topicMonth(phase, i) {
-  return Math.floor(phase.start + ((i + 0.5) / phase.topics.length) * (phase.end + 1 - phase.start));
-}
-
-function renderTopicRow(phase, topic, i, next) {
-  const key = `t:${topic.id}`;
-  const done = isDone(key);
-  const isNext = next?.topic.id === topic.id;
-  const step = done ? 3 : topicStep(topic);
-  return el('li', { class: `node${done ? ' done' : ''}${isNext ? ' next' : ''}${openTopic === topic.id ? ' open' : ''}`, id: `node-${topic.id}` },
-    el('input', { class: 'tick', type: 'checkbox', 'aria-label': `Done: ${topic.title}`, checked: done, onchange: (event) => setDone(key, event.target.checked) }),
-    el('button', { class: 'node-main', type: 'button', onclick: () => focusTopic(phase.id, topic.id) },
-      el('span', { class: 'node-title', text: topic.short }),
-      el('span', { class: 'node-meta' },
-        isNext ? el('em', { text: 'Next' }) : null,
-        `${monthLabel(topicMonth(phase, i))} · ${topic.videos.length + topic.resources.length} resources`)),
-    el('span', { class: 'dots', role: 'img', 'aria-label': `${step} of 3 steps done` }, ...[0, 1, 2].map((n) => el('i', { class: n < step ? 'on' : '' }))));
-}
-
-function renderExamRow(phase, cert) {
-  const key = certKey(cert);
-  return el('li', { class: `node exam${isDone(key) ? ' done' : ''}${cert.core ? '' : ' opt'}` },
-    el('input', { class: 'tick', type: 'checkbox', 'aria-label': `Passed ${cert.name}`, checked: isDone(key), onchange: (event) => setDone(key, event.target.checked) }),
-    el('button', { class: 'node-main', type: 'button', onclick: () => openPanel(phase.id, null, 'exams') },
-      el('span', { class: 'node-title', text: `Exam: ${cert.exam}` }),
-      el('span', { class: 'node-meta', text: `${monthLabel(cert.month)} · ${cert.cost}${cert.core ? '' : ' · optional'}` })));
-}
-
-function renderPhaseCard(phase, next) {
-  const state = phaseState(phase);
-  const showOptional = $('optional').checked;
-  const entries = [
-    ...phase.topics.map((topic, i) => ({ at: topicMonth(phase, i) + 0.1 * i / phase.topics.length, row: () => renderTopicRow(phase, topic, i, next), done: isDone(`t:${topic.id}`) })),
-    ...phase.certs.filter((cert) => cert.core || showOptional).map((cert) => ({ at: cert.month + 0.95, row: () => renderExamRow(phase, cert), done: isDone(certKey(cert)) })),
-  ].sort((a, b) => a.at - b.at).filter((entry) => !hideFinished || !entry.done);
-  const open = openPhases.has(phase.id);
-  const upcoming = phase.topics.find((topic) => !isDone(`t:${topic.id}`));
-  const dimmed = (selectedPhase && selectedPhase !== phase.id) ? ' quiet' : '';
-  return el('article', { class: `phase ${state}${dimmed}${open ? ' is-open' : ''}`, id: `phase-${phase.id}`, 'data-phase': phase.id, style: `--c:${color(phase)}` },
-    el('button', { class: 'phase-toggle', type: 'button', 'aria-expanded': String(open), onclick: () => togglePhase(phase.id) },
-      el('span', { class: 'phase-n', text: phase.n }),
-      el('span', { class: 'phase-title' },
-        el('strong', { text: phase.short }),
-        el('small', { text: `${monthLabel(phase.start)} – ${monthLabel(phase.end)}` })),
-      el('span', { class: `pill state-${state}`, text: STATE_LABEL[state] }),
-      el('span', { class: 'chev', 'aria-hidden': 'true', text: '›' })),
-    el('div', { class: 'phase-progress' },
-      el('span', { class: 'meter' }, el('i', { style: `width:${phasePct(phase)}%` })),
-      el('small', { text: `${topicsDone(phase)}/${phase.topics.length}` })),
-    open ? null : el('p', { class: 'phase-needs', text: upcoming ? `Next: ${upcoming.short}` : 'All topics finished' }),
-    open ? el('button', { class: 'linkish phase-about', type: 'button', text: 'Goals, projects and reading', onclick: () => focusPhase(phase.id) }) : null,
-    open && phase.needs.length ? el('p', { class: 'phase-needs', text: `Builds on ${phase.needs.map((id) => phaseById(id).short).join(', ')}` }) : null,
-    !open ? null : entries.length ? el('ol', { class: 'nodes' }, ...entries.map((entry) => entry.row())) : el('p', { class: 'phase-needs', text: 'Everything here is finished.' }));
-}
-
-function renderRoad() {
-  const next = nextTopic();
-  // Rows are rebuilt, so put keyboard focus back where it was.
-  const active = document.activeElement;
-  const focusRow = active?.closest?.('.node')?.id;
-  const focusClass = active?.classList?.[0];
-  $('expand-all').textContent = openPhases.size === data.phases.length ? 'Collapse all' : 'Expand all';
-  $('road-rows').replaceChildren(...ROWS
-    .map((row) => el('div', { class: `road-row n${row.length}` }, ...row.map((id) => renderPhaseCard(phaseById(id), next)))));
-  if (focusRow && focusClass) document.getElementById(focusRow)?.querySelector(`.${focusClass}`)?.focus({ preventScroll: true });
-  drawLinks();
-}
-
-function syncOptional() {
-  const showOptional = $('optional').checked;
-  document.querySelectorAll('#ladder tr.is-opt').forEach((row) => row.classList.toggle('hide', !showOptional));
-}
-
-// Dependency lines between phase cards. Lines that skip a row run down the outer gutter.
-function drawLinks() {
-  const svg = $('links');
-  const road = $('road');
-  if (!road.offsetWidth) return;
-  const box = road.getBoundingClientRect();
-  const rect = (id) => {
-    const node = document.getElementById(`phase-${id}`);
-    if (!node) return null;
-    const r = node.getBoundingClientRect();
-    return { l: r.left - box.left, r: r.right - box.left, t: r.top - box.top, b: r.bottom - box.top, cx: (r.left + r.right) / 2 - box.left };
-  };
-  svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
-  svg.setAttribute('height', box.height);
-  const paths = [];
-  const rowOf = (id) => ROWS.findIndex((row) => row.includes(id));
-  data.phases.forEach((phase) => {
-    phase.needs
-      .filter((need) => !phase.needs.some((other) => other !== need && ancestors(other).has(need)))
-      .forEach((need) => {
-        const from = rect(need);
-        const to = rect(phase.id);
-        if (!from || !to) return;
-        const skip = rowOf(phase.id) - rowOf(need) > 1;
-        let d;
-        if (skip) {
-          const x = box.width - 8;
-          d = `M${from.r} ${from.b - 40} C${x} ${from.b - 40} ${x} ${from.b + 20} ${x} ${from.b + 60} L${x} ${to.t - 20} C${x} ${to.t + 20} ${x} ${to.t + 40} ${to.r} ${to.t + 40}`;
-        } else {
-          const mid = (from.b + to.t) / 2;
-          d = `M${from.cx} ${from.b} C${from.cx} ${mid} ${to.cx} ${mid} ${to.cx} ${to.t}`;
-        }
-        const source = phaseById(need);
-        const state = topicsDone(source) === source.topics.length ? 'done' : inFocus(source, clampMonth(currentMonth())) ? 'live' : 'wait';
-        const quiet = selectedPhase && selectedPhase !== need && selectedPhase !== phase.id ? ' quiet' : '';
-        paths.push(`<path class="link ${state}${quiet}" style="--c:var(--s${source.n})" d="${d}"/>`);
-      });
-  });
-  svg.innerHTML = paths.join('');
+function jumpToQuest() {
+  const found = nextTopic();
+  if (found) centerOn(`node-${found.topic.id}`);
 }
 
 async function init() {
@@ -1083,13 +1172,12 @@ async function init() {
     return;
   }
   month = clampMonth(currentMonth());
-  openPhases = loadOpen();
-  labelTheme();
   renderStatic();
   bindEvents();
   refresh();
   renderNotice();
   await readSyncLink();
+  if (!location.hash) { const found = nextTopic(); if (found) centerOn(`node-${found.topic.id}`, false); }
   openFromHash();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { /* still works online */ });
 }

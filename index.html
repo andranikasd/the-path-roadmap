@@ -7,71 +7,57 @@
 <meta name="description" content="An interactive 36-month roadmap from senior DevOps to principal engineer, with free video courses, labs and self-checks for every topic.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M6 22h6l4-12h10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#f5f0e6">
+<meta name="theme-color" content="#0a0a14">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="map.css">
 <link rel="stylesheet" href="skin.css">
 <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
-<script>
-  (function () {
-    var skin = 'paper';
-    try { var saved = localStorage.getItem('the-path-theme'); if (saved === 'studio' || saved === 'midnight') skin = saved; } catch (e) { /* default look */ }
-    document.documentElement.dataset.skin = skin;
-    document.documentElement.dataset.theme = skin === 'midnight' ? 'dark' : 'light';
-  }());
-</script>
+<script>document.documentElement.dataset.skin = "arcane"; document.documentElement.dataset.theme = "dark";</script>
 </head>
 <body>
-<a class="skip" href="#road">Skip to the roadmap</a>
+<a class="skip" href="#road">Skip to the skill tree</a>
 <div class="notice" id="notice" role="status" hidden></div>
 
 <div id="map-view">
   <header class="topbar">
-    <div class="wrap topbar-in">
+    <div class="topbar-in">
       <strong class="brand">The Path</strong>
+      <div class="hero-stat" aria-label="Your level">
+        <span class="lvl" id="level">1</span>
+        <div class="xp"><div class="xp-top"><b id="rank"></b><small id="xp-text"></small></div><div class="xp-bar"><i id="xp-fill"></i></div></div>
+      </div>
       <nav class="topnav" aria-label="Views">
         <button class="hud-btn" id="open-search" type="button"><span>Search</span><kbd>/</kbd></button>
         <button class="hud-btn" id="to-library" type="button">Library</button>
         <button class="hud-btn" id="to-plan" type="button">Plan</button>
         <button class="hud-btn" id="open-backup" type="button">Backup</button>
-        <label class="look"><span>Look</span>
-          <select id="skin" aria-label="Choose a look">
-            <option value="paper">Paper</option>
-            <option value="studio">Studio</option>
-            <option value="midnight">Midnight</option>
-          </select>
-        </label>
       </nav>
     </div>
   </header>
-  <main class="wrap road-page">
-    <p class="status" id="status" role="status"></p>
-    <section class="now-grid" aria-label="What to do now">
-      <div class="action" id="action"></div>
-      <div class="week-card" id="week-card"></div>
-    </section>
-    <div class="road-tools">
-      <h2>The roadmap</h2>
-      <button class="hud-btn" id="expand-all" type="button">Expand all</button>
-      <label class="dock-opt"><input id="hide-finished" type="checkbox"> Hide finished</label>
-      <label class="dock-opt"><input id="optional" type="checkbox"> Optional exams</label>
-    </div>
-    <details class="timeline">
-      <summary>36-month timeline</summary>
-      <div class="strip" id="strip"></div>
-    </details>
-    <section class="road" id="road" aria-label="Roadmap by phase">
-      <svg class="links" id="links" aria-hidden="true" width="100%"></svg>
-      <div class="road-rows" id="road-rows"></div>
-    </section>
-  </main>
+  <div class="game">
+    <aside class="rail">
+      <p class="status" id="status" role="status"></p>
+      <section class="action" id="action" aria-label="Current quest"></section>
+      <button class="hud-btn quest-jump" id="quest-jump" type="button">Find quest on the tree</button>
+      <section class="week-card" id="week-card" aria-label="This week"></section>
+      <div class="legend">
+        <span data-k="available">Available</span><span data-k="active">In progress</span><span data-k="mastered">Mastered</span><span data-k="locked">Locked</span>
+      </div>
+      <label class="dock-opt"><input id="optional" type="checkbox"> Show optional exams</label>
+    </aside>
+    <main class="tree-wrap">
+      <a id="road" tabindex="-1"></a>
+      <div class="tree" id="tree"></div>
+    </main>
+  </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="levelup" id="levelup" aria-live="polite"></div>
 </div>
 
 <div id="plan-view" hidden>
   <div class="bar-top">
     <div class="wrap bar-inner">
-      <button class="primary" id="to-map" type="button">← Back to the roadmap</button>
+      <button class="primary" id="to-map" type="button">← Back to the tree</button>
       <button class="ghost" id="plan-library" type="button">Library</button>
       <nav aria-label="Sections">
         <a href="#ninety">First 90 days</a>
@@ -88,6 +74,7 @@
   </header>
   <main>
     <section class="wrap stats" aria-label="Your progress" id="stats"></section>
+    <section class="wrap" aria-label="36-month timeline"><div class="strip" id="strip"></div></section>
 <section class="wrap" id="ninety" aria-labelledby="ninety-title">
     <div class="section-head">
       <h2 id="ninety-title">Your first 90 days</h2>
@@ -160,7 +147,7 @@
   </section>
   </main>
   <footer class="wrap foot">
-  <p>Your progress is saved in this browser. Use Backup on the roadmap to move it between devices.</p>
+  <p>Your progress is saved in this browser. Use Backup on the skill tree to move it between devices.</p>
   <div class="foot-actions">
     <button class="ghost" id="reset" type="button">Reset</button>
   </div>
