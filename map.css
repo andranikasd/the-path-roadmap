@@ -12,17 +12,36 @@ body.in-map { overflow: hidden; background: var(--bg); }
 .wnode.off { opacity: 0; pointer-events: none; }
 .wnode.dim { opacity: .28; }
 .wnode.dim.off { opacity: 0; }
-.plabel, .moon, .satellite { background: rgb(10 12 22 / .76); border: 1px solid rgb(255 255 255 / .16); backdrop-filter: blur(6px); }
-.plabel { min-width: 132px; padding: 7px 11px 8px; border-radius: 10px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 1px; z-index: 3; }
-.plabel:hover, .plabel:focus-visible { border-color: var(--c); box-shadow: 0 0 22px -3px var(--c); }
-.plabel.live { border-color: var(--c); }
-.plabel-top { display: flex; align-items: center; gap: 6px; font: 500 .6875rem var(--mono); color: #c3c2b7; }
-.plabel-top em { margin-left: auto; font: 700 .625rem var(--sans); background: #f4f3ef; color: #111; border-radius: 99px; padding: 0 6px; }
+.moon, .satellite { background: rgb(10 14 24 / .82); border: 1px solid rgb(255 255 255 / .18); }
+/* Phase names read like region names on a printed map */
+.plabel { padding: 0; border: 0; background: none; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; z-index: 3; text-shadow: 0 1px 2px #000, 0 0 10px #000, 0 0 3px #000; }
+.plabel-top { display: flex; align-items: center; gap: 6px; }
+.plabel-n { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #fff; font-size: .75rem; font-weight: 800; text-shadow: none; box-shadow: 0 0 0 2px #fff, 0 2px 8px #000; }
+.plabel strong { font-size: 1.0625rem; font-weight: 800; letter-spacing: .02em; line-height: 1.2; white-space: nowrap; }
+.plabel:hover strong, .plabel:focus-visible strong { text-decoration: underline; }
+.plabel.live .plabel-n { box-shadow: 0 0 0 2px #fff, 0 0 18px 4px var(--c); }
+.plabel-top em { font: 700 .625rem var(--sans); background: #f4f3ef; color: #111; border-radius: 99px; padding: 0 6px; text-shadow: none; }
 .plabel-top em[hidden] { display: none; }
-.plabel strong { font-size: 1rem; font-weight: 700; line-height: 1.2; white-space: nowrap; }
-.plabel-sub { font-size: .6875rem; color: #c3c2b7; white-space: nowrap; }
-.plabel-meter { display: block; height: 3px; margin-top: 4px; border-radius: 2px; background: rgb(255 255 255 / .16); overflow: hidden; }
-.plabel-meter i { display: block; height: 100%; width: 0; background: var(--c); transition: width .5s; }
+.plabel-sub { font-size: .6875rem; color: #e6e4dc; white-space: nowrap; }
+.plabel-meter { display: block; width: 100%; max-width: 130px; height: 3px; margin-top: 2px; border-radius: 2px; background: rgb(255 255 255 / .28); overflow: hidden; }
+.plabel-meter i { display: block; height: 100%; width: 0; background: #fff; transition: width .5s; }
+.mile { font: 600 .6875rem var(--mono); color: #fff; white-space: nowrap; text-shadow: 0 1px 2px #000, 0 0 6px #000; pointer-events: none; }
+.mile.end { background: #fff; color: #111; text-shadow: none; border-radius: 5px; padding: 1px 7px; font-family: var(--sans); font-weight: 700; }
+.far .moon { padding: 0; background: none; border: 0; }
+.far .moon .tick { width: 12px; height: 12px; border-width: 3px; background: #fff; pointer-events: none; box-shadow: 0 1px 3px #000; }
+.far .moon .tick:checked { background: var(--c); border-color: #fff; }
+.far .moon .tick:checked::after { content: none; }
+.far .moon-label { display: none; }
+.far .moon:hover { cursor: pointer; }
+.far .plabel-sub { display: none; }
+.far .satellite { padding: 0 5px; font-size: .625rem; }
+.legend { position: fixed; right: 12px; bottom: 112px; z-index: 9; display: flex; flex-direction: column; gap: 3px; padding: 8px 11px; border-radius: 10px; font-size: .6875rem; color: var(--text-2); background: color-mix(in srgb, var(--surface) 86%, transparent); border: 1px solid var(--line); backdrop-filter: blur(12px); }
+.legend span { display: flex; align-items: center; gap: 7px; }
+.legend i { flex: none; width: 16px; display: grid; place-items: center; font-style: normal; color: var(--text); }
+.lg-line { height: 3px; background: var(--text); border-radius: 2px; }
+.lg-pin { width: 10px !important; height: 10px; margin: 0 3px; border-radius: 50%; border: 2px solid var(--s1); }
+.lg-tower { width: 8px !important; height: 13px; margin: 0 4px; background: var(--text-2); clip-path: polygon(30% 0, 70% 0, 100% 100%, 0 100%); }
+.panel-open .legend { display: none; }
 .moon { display: flex; align-items: center; gap: 6px; padding: 3px 9px 3px 4px; border-radius: 99px; white-space: nowrap; z-index: 2; }
 .moon:hover, .moon:focus-within { border-color: var(--c); }
 .moon .tick { appearance: none; -webkit-appearance: none; width: 16px; height: 16px; margin: 0; border-radius: 50%; border: 2px solid var(--c); background: transparent; cursor: pointer; flex: none; display: grid; place-items: center; }
@@ -38,10 +57,6 @@ body.in-map { overflow: hidden; background: var(--bg); }
 .satellite.passed { text-decoration: line-through; color: #c3c2b7; }
 .satellite.due { background: #f4f3ef; color: #111; box-shadow: 0 0 24px var(--c); }
 
-.far .plabel { min-width: 0; padding: 4px 9px 5px; }
-.far .plabel strong { font-size: .875rem; }
-.far .plabel-sub, .far .plabel-top span { display: none; }
-.far .plabel-top em { margin-left: 0; }
 .you { background: #fff; color: #111; font-size: .75rem; font-weight: 700; border-radius: 99px; padding: 2px 9px; white-space: nowrap; box-shadow: 0 0 22px rgb(255 255 255 / .7); pointer-events: none; z-index: 4; }
 
 /* Course rail */
@@ -136,9 +151,11 @@ kbd { font: 500 .6875rem var(--mono); border: 1px solid var(--line); border-radi
   .hud-top { flex-direction: column-reverse; align-items: stretch; }
   .hud-actions { margin-left: 0; justify-content: flex-end; }
   .hud-btn { padding: 7px 9px; font-size: .75rem; }
-  .far .plabel { padding: 3px 7px 4px; }
-  .far .plabel strong { font-size: .75rem; }
-  .far .plabel-top { display: none; }
+  .legend { display: none; }
+  .plabel strong { font-size: .8125rem; }
+  .plabel-n { width: 18px; height: 18px; font-size: .625rem; }
+  .far .plabel-meter, .far .plabel-top em { display: none; }
+  .mile { font-size: .5625rem; }
   .now { width: 100%; padding: 8px 11px 9px; }
   .now-title { font-size: 1rem; margin-top: 2px !important; }
   .now-detail { -webkit-line-clamp: 1; }

@@ -16,7 +16,7 @@
 <a class="skip" href="#stage">Skip to the map</a>
 
 <div id="map-view">
-  <div class="stage" id="stage" tabindex="0" role="application" aria-label="The Path mountain. Drag to orbit, scroll or pinch to zoom, Tab through phases and topics. The Plan view lists everything as text.">
+  <div class="stage" id="stage" tabindex="0" role="application" aria-label="The Path trail map. Drag to move, scroll or pinch to zoom, Tab through phases and topics. The Plan view lists everything as text.">
     <canvas id="gl" aria-hidden="true"></canvas>
     <div class="labels" id="labels"></div>
   </div>
@@ -40,7 +40,13 @@
   </header>
 
   <div class="rail" id="rail" hidden></div>
-  <p class="hint-keys" id="hint-keys">Drag to orbit · Scroll to zoom · Right-drag to pan · Click anything · ▶ climbs the mountain</p>
+  <aside class="legend" aria-label="Map legend">
+    <span><i class="lg-line"></i>Route, bright once walked</span>
+    <span><i class="lg-pin"></i>Topic</span>
+    <span><i class="lg-gate">◆</i>Exam gate</span>
+    <span><i class="lg-tower"></i>Phase tower, one level per topic</span>
+  </aside>
+  <p class="hint-keys" id="hint-keys">Drag to move · Scroll to zoom · Right-drag to rotate · Click any pin · ▶ walks the route</p>
 
   <div class="dock" role="group" aria-label="Journey through the 36 months">
     <button class="dock-play" id="play" type="button" aria-label="Climb the mountain">▶</button>

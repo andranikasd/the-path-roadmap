@@ -1,29 +1,36 @@
 import * as THREE from './vendor/three.module.min.js';
 
-// The road: month -> a point on a spiral climbing a cone.
-const TURNS = 2.75;
-const R0 = 1180;
-const R1 = 70;
-const BASE = R0 + 260;
+// The route: month -> a switchback climbing an island from the south shore to the summit.
 const PEAK = 880;
 const TOTAL = 36;
-const ANGLE0 = 2.4;
 const LANE = 48;
-// Lanes keep phases that overlap in time apart. Positive is the outer side of the road.
+const SUMMIT = { x: 0, z: -1150 };
+const START_Z = 1250;
+const LEGS = 2.25;
+// Lanes keep phases that overlap in time apart.
 const LANES = { systems: 1, network: 2, code: -1, cloud: 1, k8s: -2, security: -1, data: 2, principal: 1 };
+let AMP = 1150;
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const smooth = (v) => { const x = clamp(v); return x * x * (3 - 2 * x); };
 const lerp = (a, b, t) => a + (b - a) * t;
 const roadT = (m) => clamp((m - 1) / TOTAL);
-const radiusAt = (t) => R1 + (R0 - R1) * Math.pow(1 - t, 0.72);
-const angleAt = (t) => ANGLE0 + t * TURNS * Math.PI * 2;
-const coneH = (r) => PEAK * Math.pow(Math.max(0, 1 - r / BASE), 1.25);
-
-function roadPoint(t, lane = 0, lift = 3) {
-  const r = radiusAt(t) + lane;
-  const a = angleAt(t);
-  return new THREE.Vector3(r * Math.cos(a), coneH(r) + lift, r * Math.sin(a));
+const baseH = (x, z) => {
+  const dist = Math.hypot(x - SUMMIT.x, z - SUMMIT.z);
+  return 30 + PEAK * Math.pow(Math.max(0, 1 - dist / 2900), 1.6);
+};
+function centerXZ(t) {
+  const swing = AMP * (1 - 0.92 * Math.pow(t, 1.5));
+  return [swing * Math.sin(t * LEGS * Math.PI * 2), lerp(START_Z, SUMMIT.z, t)];
+}
+function roadPoint(t, lane = 0, lift = 6) {
+  const [x, z] = centerXZ(t);
+  const [ax, az] = centerXZ(clamp(t - 0.002));
+  const [bx, bz] = centerXZ(clamp(t + 0.002));
+  const len = Math.hypot(bx - ax, bz - az) || 1;
+  const px = x + (-(bz - az) / len) * lane;
+  const pz = z + ((bx - ax) / len) * lane;
+  return new THREE.Vector3(px, baseH(px, pz) + lift, pz);
 }
 
 /* Terrain */
@@ -39,26 +46,29 @@ function fbm(x, y) {
   for (let i = 0; i < 4; i += 1) { sum += amp * noise(x * f, y * f); amp *= 0.5; f *= 2.1; }
   return sum;
 }
-function roadInfo(x, z) {
-  const r = Math.hypot(x, z);
-  const a = Math.atan2(z, x);
-  let best = Infinity; let bestT = 0;
-  for (let k = -1; k < 5; k += 1) {
-    const t = (a + k * Math.PI * 2 - ANGLE0) / (TURNS * Math.PI * 2);
-    if (t < -0.02 || t > 1) continue;
-    const d = Math.abs(r - radiusAt(clamp(t)));
-    if (d < best) { best = d; bestT = clamp(t); }
+let routeSamples = [];
+function buildRouteSamples() {
+  routeSamples = [];
+  for (let i = 0; i <= 260; i += 1) { const t = i / 260; const [x, z] = centerXZ(t); routeSamples.push([x, z, t]); }
+}
+function routeDistance(x, z) {
+  let best = Infinity;
+  for (let i = 0; i < routeSamples.length; i += 1) {
+    const dx = routeSamples[i][0] - x; const dz = routeSamples[i][1] - z;
+    const d = dx * dx + dz * dz;
+    if (d < best) best = d;
   }
-  return { r, d: best, t: bestT };
+  return Math.sqrt(best);
 }
 function terrainHeight(x, z) {
-  const { r, d } = roadInfo(x, z);
-  const n = fbm(x * 0.0035 + 40, z * 0.0035 + 90) - 0.42;
-  const fine = fbm(x * 0.018, z * 0.018) - 0.45;
-  const free = smooth((d - 118) / 90);
-  const far = smooth((r - BASE + 200) / 900);
-  const summit = r < R1 ? 0 : 1;
-  return coneH(r) + (n * (110 + far * 620) + fine * 22) * Math.max(free, far) * summit;
+  const d = routeDistance(x, z);
+  const n = fbm(x * 0.0032 + 40, z * 0.0032 + 90) - 0.42;
+  const fine = fbm(x * 0.012, z * 0.012) - 0.45;
+  const free = smooth((d - 125) / 170);
+  const land = baseH(x, z) + (n * 240 + fine * 34) * free;
+  const edge = Math.hypot(x / 2400, (z + 100) / 2200) + (fbm(x * 0.0016 + 7, z * 0.0016 + 3) - 0.45) * 0.34;
+  const mask = 1 - smooth((edge - 0.8) / 0.2);
+  return land * mask - 90 * (1 - mask);
 }
 
 function glowTexture() {
@@ -75,10 +85,8 @@ function glowTexture() {
 }
 
 // Sky colours by climb: night at the base, sunrise at the summit.
-const SKY_DARK = [
-  [0, '#080c20', '#1b2648'], [0.45, '#0d1234', '#33285c'], [0.8, '#161a48', '#7a3a5c'], [1, '#33478f', '#d9936f'],
-];
-const SKY_LIGHT = [[0, '#8fb8e8', '#e8eef2'], [1, '#5f9be6', '#fbe3c8']];
+const SKY_DARK = [[0, '#0d1a2e', '#14283f'], [0.6, '#16203f', '#2a2f52'], [1, '#2b3a6b', '#6a5a72']];
+const SKY_LIGHT = [[0, '#b9d4e6', '#dbe8ee'], [1, '#c2d6ea', '#f2e4d2']];
 
 function skyAt(stops, t) {
   let i = 0;
@@ -90,12 +98,15 @@ function skyAt(stops, t) {
 
 export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks }) {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const portraitStart = window.innerHeight > window.innerWidth;
+  AMP = portraitStart ? 660 : 1150;
+  buildRouteSamples();
   const small = Math.min(window.innerWidth, window.innerHeight) < 700;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 1.75));
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x0c1226, 0.00024);
-  const camera = new THREE.PerspectiveCamera(42, 1, 10, 12000);
+  scene.fog = new THREE.FogExp2(0x14283f, 0.00009);
+  const camera = new THREE.PerspectiveCamera(38, 1, 10, 30000);
 
   const palette = {};
   const readPalette = () => {
@@ -113,7 +124,7 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
 
   /* Sky, light, stars */
   const skyUniforms = { top: { value: new THREE.Color() }, bottom: { value: new THREE.Color() } };
-  scene.add(new THREE.Mesh(new THREE.SphereGeometry(9000, 24, 16), new THREE.ShaderMaterial({
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(20000, 24, 16), new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false, uniforms: skyUniforms,
     vertexShader: 'varying float h; void main(){ h = normalize(position).y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
     fragmentShader: 'uniform vec3 top; uniform vec3 bottom; varying float h; void main(){ gl_FragColor = vec4(mix(bottom, top, smoothstep(-0.02, 0.2, h)), 1.0); }',
@@ -122,7 +133,7 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
   const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
   scene.add(hemi, sunLight);
   const sun = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: 0xffb070, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true }));
-  sun.scale.setScalar(1000);
+  sun.scale.setScalar(2600);
   scene.add(sun);
   const starGeo = new THREE.BufferGeometry();
   const starPos = new Float32Array(1500 * 3);
@@ -142,46 +153,85 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
     skyUniforms.top.value.copy(top);
     skyUniforms.bottom.value.copy(bottom);
     scene.fog.color.copy(bottom);
-    stars.material.opacity = light ? 0 : 1 - smooth((t - 0.55) / 0.42);
-    const elevation = lerp(-0.1, 0.34, t);
-    const dir = new THREE.Vector3(Math.cos(0.7) * Math.cos(elevation), Math.sin(elevation), Math.sin(0.7) * Math.cos(elevation));
-    sun.position.copy(dir).multiplyScalar(7000);
-    sun.material.opacity = light ? 0.3 : 0.65 * smooth((t - 0.25) / 0.6);
-    sunLight.position.copy(dir.y > 0.14 ? dir : new THREE.Vector3(-0.5, 0.7, 0.45));
-    sunLight.color.set(light ? 0xfff4e4 : 0xbfcfff).lerp(new THREE.Color(light ? 0xfff4e4 : 0xffb27a), light ? 0 : smooth((t - 0.55) / 0.4));
-    sunLight.intensity = light ? 2.4 : lerp(2.6, 3.2, t);
-    hemi.intensity = light ? 1.9 : lerp(2.3, 2.2, t);
+    stars.material.opacity = light ? 0 : 1 - smooth((t - 0.5) / 0.45);
+    const elevation = lerp(0.02, 0.2, t);
+    sun.position.set(Math.cos(0.7) * Math.cos(elevation), Math.sin(elevation), -Math.abs(Math.sin(0.7)) * Math.cos(elevation)).multiplyScalar(15000);
+    sun.material.opacity = light ? 0.2 : 0.4 * smooth((t - 0.3) / 0.6);
+    // A fixed low light from the north-west, the way hill shading works on printed maps.
+    sunLight.position.set(-0.62, 0.62, -0.32);
+    sunLight.color.set(0xfff6ea);
+    sunLight.intensity = light ? 3.0 : 2.5;
+    hemi.intensity = light ? 2.1 : 1.35;
+    water.material.color.set(light ? '#9cc3d6' : '#10283f');
   }
 
-  /* Terrain */
-  const seg = small ? 110 : 170;
-  const size = 6400;
-  const planeGeo = new THREE.PlaneGeometry(size, size, seg, seg);
-  planeGeo.rotateX(-Math.PI / 2);
-  const planePos = planeGeo.attributes.position;
-  for (let i = 0; i < planePos.count; i += 1) planePos.setY(i, terrainHeight(planePos.getX(i), planePos.getZ(i)));
-  const terrainGeo = planeGeo.toNonIndexed();
-  planeGeo.dispose();
-  const tp = terrainGeo.attributes.position;
-  const tc = new Float32Array(tp.count * 3);
-  const low = new THREE.Color('#3f5552'); const mid = new THREE.Color('#6a6a70'); const snow = new THREE.Color('#eef1f6');
-  const phaseAt = (t) => { const m = 1 + t * TOTAL; const list = phaseFocusAt(Math.floor(m)); return list[list.length - 1]; };
+  /* Island: territories, hill shading and contour lines */
+  const trailPos = (phase, m) => {
+    const ease = smooth((m - phase.start) / 0.9) * smooth((phase.end + 1 - m) / 0.9);
+    return roadPoint(roadT(m), (LANES[phase.id] || 1) * LANE * ease, 7);
+  };
+  const regionPts = data.phases.flatMap((phase) => {
+    const span = phase.end + 1 - phase.start;
+    return Array.from({ length: Math.max(6, span * 2) + 1 }, (_, i) => {
+      const p = trailPos(phase, phase.start + (i / Math.max(6, span * 2)) * span);
+      return [p.x, p.z, phase];
+    });
+  });
+  const seg = small ? 130 : 230;
+  const landGeo = new THREE.PlaneGeometry(6800, 6800, seg, seg);
+  landGeo.rotateX(-Math.PI / 2);
+  const lp = landGeo.attributes.position;
+  const lc = new Float32Array(lp.count * 3);
+  const low = new THREE.Color('#5d7661'); const mid = new THREE.Color('#857f70'); const snow = new THREE.Color('#f1f3f6'); const sand = new THREE.Color('#b9ab86');
   const face = new THREE.Color();
-  for (let i = 0; i < tp.count; i += 3) {
-    const x = (tp.getX(i) + tp.getX(i + 1) + tp.getX(i + 2)) / 3;
-    const y = (tp.getY(i) + tp.getY(i + 1) + tp.getY(i + 2)) / 3;
-    const z = (tp.getZ(i) + tp.getZ(i + 1) + tp.getZ(i + 2)) / 3;
+  const tint = new THREE.Color();
+  for (let i = 0; i < lp.count; i += 1) {
+    const x = lp.getX(i); const z = lp.getZ(i);
+    const y = terrainHeight(x, z);
+    lp.setY(i, y);
     const h = clamp(y / PEAK);
-    face.copy(low).lerp(mid, smooth(h / 0.55)).lerp(snow, smooth((h - 0.72) / 0.2));
-    const info = roadInfo(x, z);
-    const phase = info.d < 150 ? phaseAt(info.t) : null;
-    if (phase) face.lerp(palette[phase.id], 0.42 * (1 - info.d / 150));
-    const jitter = 0.92 + hash(x, z) * 0.16;
-    for (let j = 0; j < 3; j += 1) tc.set([face.r * jitter, face.g * jitter, face.b * jitter], (i + j) * 3);
+    face.copy(low).lerp(mid, smooth((h - 0.12) / 0.4)).lerp(snow, smooth((h - 0.68) / 0.16));
+    if (y < 16) face.lerp(sand, 1 - smooth(y / 16));
+    // Blend the nearest trails so territory borders stay soft at any zoom.
+    const nearest = {};
+    regionPts.forEach(([px, pz, phase]) => { const d = (px - x) ** 2 + (pz - z) ** 2; if (!(nearest[phase.id] < d)) nearest[phase.id] = d; });
+    let weight = 0; let best = Infinity; tint.setRGB(0, 0, 0);
+    Object.entries(nearest).forEach(([id, d2]) => {
+      const d = Math.sqrt(d2);
+      if (d < best) best = d;
+      const w = Math.exp(-d / 55);
+      weight += w;
+      tint.r += palette[id].r * w; tint.g += palette[id].g * w; tint.b += palette[id].b * w;
+    });
+    if (weight > 0 && y > 8) {
+      tint.multiplyScalar(1 / weight);
+      face.lerp(tint, 0.5 * (1 - smooth((best - 120) / 520)) * (1 - smooth((h - 0.62) / 0.2)));
+    }
+    lc.set([face.r, face.g, face.b], i * 3);
   }
-  terrainGeo.setAttribute('color', new THREE.BufferAttribute(tc, 3));
-  terrainGeo.computeVertexNormals();
-  scene.add(new THREE.Mesh(terrainGeo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1, metalness: 0 })));
+  landGeo.setAttribute('color', new THREE.BufferAttribute(lc, 3));
+  landGeo.computeVertexNormals();
+  const landMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
+  landMat.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying float vHeight;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvHeight = position.y;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vHeight;')
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        float cv = vHeight / 40.0;
+        float cl = abs(fract(cv - 0.5) - 0.5) / max(fwidth(cv), 0.0001);
+        float major = abs(fract(cv / 5.0 - 0.5) - 0.5) / max(fwidth(cv / 5.0), 0.0001);
+        float above = smoothstep(2.0, 8.0, vHeight);
+        diffuseColor.rgb *= mix(1.0, mix(0.8, 1.0, smoothstep(0.0, 1.1, cl)), above);
+        diffuseColor.rgb *= mix(1.0, mix(0.62, 1.0, smoothstep(0.0, 1.4, major)), above);
+        diffuseColor.rgb += (1.0 - smoothstep(-5.0, 3.0, abs(vHeight))) * 0.22;`);
+  };
+  scene.add(new THREE.Mesh(landGeo, landMat));
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(40000, 40000), new THREE.MeshBasicMaterial({ color: '#10283f' }));
+  water.rotation.x = -Math.PI / 2;
+  water.position.y = -1;
+  scene.add(water);
 
   /* Road and braided phase trails */
   const makeTrail = (points, radius, color) => {
@@ -194,20 +244,16 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
     return { base, lit, indexCount: geo.index.count, litFrac: 0 };
   };
   const roadPts = [];
-  for (let i = 0; i <= 360; i += 1) roadPts.push(roadPoint(i / 360, 0, 2));
-  const road = makeTrail(roadPts, 2.6, new THREE.Color('#f4efe6'));
+  for (let i = 0; i <= 420; i += 1) roadPts.push(roadPoint(i / 420, 0, 5));
+  const road = makeTrail(roadPts, 2.2, new THREE.Color('#f4efe6'));
 
   const trails = {};
-  const trailPos = (phase, m) => {
-    const ease = smooth((m - phase.start) / 0.9) * smooth((phase.end + 1 - m) / 0.9);
-    return roadPoint(roadT(m), (LANES[phase.id] || 1) * LANE * ease, 3.5);
-  };
   data.phases.forEach((phase) => {
     const span = phase.end + 1 - phase.start;
     const n = Math.max(40, span * 18);
     const pts = [];
     for (let i = 0; i <= n; i += 1) pts.push(trailPos(phase, phase.start + (i / n) * span));
-    const trail = makeTrail(pts, 4.4, palette[phase.id]);
+    const trail = makeTrail(pts, 3.4, palette[phase.id]);
     trail.pts = pts;
     trail.phase = phase;
     trails[phase.id] = trail;
@@ -325,11 +371,16 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
   const hikerCore = new THREE.Mesh(new THREE.SphereGeometry(5.5, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false }));
   hikerCore.position.y = 14;
   const hikerGlow = addGlow(0xffffff, 90, 14);
-  const hikerBeam = new THREE.Mesh(new THREE.CylinderGeometry(1, 4, 240, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  hikerBeam.position.y = 134;
+  const hikerBeam = new THREE.Mesh(new THREE.CylinderGeometry(1, 4, 110, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  hikerBeam.position.y = 70;
   hiker.add(hikerCore, hikerGlow, hikerBeam);
   scene.add(hiker);
 
+  [6, 12, 18, 24, 30].forEach((m) => {
+    addLabel(labels.mile(m), roadPoint(roadT(m + 1)).setY(roadPoint(roadT(m + 1)).y + 8), 'mile', { id: null }, { major: m % 12 === 0 });
+  });
+  addLabel(labels.mile(0), roadPoint(0).setY(roadPoint(0).y + 8), 'mile', { id: null }, { major: true });
+  addLabel(labels.mile(36), roadPoint(1).setY(roadPoint(1).y + 8), 'mile', { id: null }, { major: true });
   const youAnchor = addLabel(labels.you(), new THREE.Vector3(), 'you', { id: null });
 
   /* Flowing energy and bursts */
@@ -371,30 +422,28 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
   }
 
   /* Camera rig */
-  const overviewDist = () => (window.innerHeight > window.innerWidth ? 4700 : 3250);
-  const rig = { tx: 0, ty: 120, tz: 0, az: 0.2, pol: 1.34, dist: 5000 };
-  const goal = { tx: 0, ty: 230, tz: 0, az: 1.05, pol: 1.05, dist: overviewDist() };
+  const overviewDist = () => (window.innerHeight > window.innerWidth ? 7400 : 5000);
+  const FRONT = Math.PI / 2;
+  const HOME = new THREE.Vector3(0, 180, 150);
+  const rig = { tx: 0, ty: 180, tz: 300, az: FRONT - 0.3, pol: 1.05, dist: overviewDist() * 1.25 };
+  const goal = { tx: HOME.x, ty: HOME.y, tz: HOME.z, az: FRONT, pol: 0.74, dist: overviewDist() };
   let viewShift = { x: 0, y: 0 };
   let viewShiftGoal = { x: 0, y: 0 };
-  let idle = true;
   let journey = null;
   if (reduced) Object.assign(rig, goal);
 
   const nearestAngle = (from, to) => from + Math.atan2(Math.sin(to - from), Math.cos(to - from));
   function aim(pos, dist, pol = goal.pol, az = goal.az) {
     goal.tx = pos.x; goal.ty = pos.y; goal.tz = pos.z;
-    goal.dist = clamp(dist, 120, 6000);
+    goal.dist = clamp(dist, 200, 9000);
     goal.pol = pol;
     goal.az = nearestAngle(rig.az, az);
-    idle = false;
     if (reduced) Object.assign(rig, goal);
   }
-  const outerAngle = (pos) => Math.atan2(pos.z, pos.x);
 
   function overview() {
     active = null; selectedTopic = null;
-    aim(new THREE.Vector3(0, 230, 0), overviewDist(), 1.05, rig.az);
-    idle = true;
+    aim(HOME, overviewDist(), 0.74, FRONT);
   }
   function focusPhase(id) {
     const trail = trails[id];
@@ -403,18 +452,18 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
     const radius = box.getSize(new THREE.Vector3()).length() / 2;
     const portrait = window.innerHeight > window.innerWidth;
     active = id; selectedTopic = null;
-    aim(center, Math.max(620, radius * (portrait ? 3.8 : 2.5)), 0.88, Math.hypot(center.x, center.z) > 300 ? outerAngle(center) : rig.az);
+    aim(center, Math.max(1000, radius * (portrait ? 3.8 : 2.7)), 0.8, FRONT);
   }
   function focusTopic(id) {
     const b = beacons[id];
     if (!b) return;
     active = b.phase.id; selectedTopic = id;
-    aim(b.pos.clone().setY(b.pos.y + 24), 480, 1.04, outerAngle(b.pos) + 0.2);
+    aim(b.pos.clone().setY(b.pos.y + 24), 640, 0.92, FRONT);
     emit(b.crystal.getWorldPosition(new THREE.Vector3()), palette[b.phase.id], 18, 50);
   }
   function focusMonth(m) {
     const p = roadPoint(roadT(m));
-    aim(p, 620, 0.98, outerAngle(p) + 0.32);
+    aim(p, 1000, 0.85, FRONT);
   }
 
   /* State from the app */
@@ -456,7 +505,6 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
   function startJourney(from, onMonth, onEnd) {
     monthF = from; monthTarget = from;
     journey = { onMonth, onEnd, last: from };
-    idle = false;
   }
   function stopJourney() { journey = null; monthTarget = month; }
 
@@ -467,15 +515,16 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
   let moved = false;
   const stage = canvas.parentElement;
   const raycaster = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  const zoomHit = new THREE.Vector3();
 
   function panBy(dx, dy) {
-    const scale = rig.dist * 0.0011;
-    const right = new THREE.Vector3(-Math.sin(rig.az), 0, Math.cos(rig.az));
-    const fwd = new THREE.Vector3(Math.cos(rig.az), 0, Math.sin(rig.az));
-    goal.tx -= right.x * dx * scale - fwd.x * -dy * scale;
-    goal.tz -= right.z * dx * scale - fwd.z * -dy * scale;
-    const r = Math.hypot(goal.tx, goal.tz);
-    if (r > 1500) { goal.tx *= 1500 / r; goal.tz *= 1500 / r; }
+    const scale = (rig.dist * 0.69) / window.innerHeight;
+    const rx = Math.sin(rig.az); const rz = -Math.cos(rig.az);
+    const fx = -Math.cos(rig.az); const fz = -Math.sin(rig.az);
+    goal.tx = clamp(goal.tx - rx * dx * scale + fx * dy * scale, -2400, 2400);
+    goal.tz = clamp(goal.tz - rz * dx * scale + fz * dy * scale, -2200, 2200);
+    if (reduced) Object.assign(rig, goal);
   }
   stage.addEventListener('contextmenu', (e) => e.preventDefault());
   stage.addEventListener('pointerdown', (e) => {
@@ -483,7 +532,6 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
     pointers.set(e.pointerId, [e.clientX, e.clientY]);
     stage.setPointerCapture(e.pointerId);
     moved = false;
-    idle = false;
     callbacks.onUserInput();
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
@@ -491,7 +539,7 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
       drag = null;
       return;
     }
-    drag = { x: e.clientX, y: e.clientY, pan: e.button === 2 || e.shiftKey };
+    drag = { x: e.clientX, y: e.clientY, pan: !(e.button === 2 || e.shiftKey) };
   });
   stage.addEventListener('pointermove', (e) => {
     if (!pointers.has(e.pointerId)) { hover(e); return; }
@@ -499,7 +547,7 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
     if (pinch && pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
-      goal.dist = clamp(goal.dist * (pinch.d / d), 120, 6000);
+      goal.dist = clamp(goal.dist * (pinch.d / d), 200, 9000);
       panBy((a[0] + b[0]) / 2 - pinch.x, (a[1] + b[1]) / 2 - pinch.y);
       pinch = { d, x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2 };
       moved = true;
@@ -514,7 +562,7 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
     if (drag.pan) panBy(dx, dy);
     else {
       goal.az += dx * 0.0052;
-      goal.pol = clamp(goal.pol - dy * 0.004, 0.22, 1.5);
+      goal.pol = clamp(goal.pol - dy * 0.004, 0.2, 1.38);
     }
     if (reduced) Object.assign(rig, goal);
   });
@@ -534,13 +582,21 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
   stage.addEventListener('pointercancel', release);
   stage.addEventListener('wheel', (e) => {
     e.preventDefault();
-    idle = false;
     callbacks.onUserInput();
-    goal.dist = clamp(goal.dist * Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0012)), 120, 6000);
+    const before = goal.dist;
+    goal.dist = clamp(goal.dist * Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0012)), 200, 9000);
+    // Zoom toward the cursor, as on any map.
+    const box = canvas.getBoundingClientRect();
+    ndc.set(((e.clientX - box.left) / box.width) * 2 - 1, -((e.clientY - box.top) / box.height) * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    if (raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -rig.ty), zoomHit)) {
+      const f = 1 - goal.dist / before;
+      goal.tx = clamp(goal.tx + (zoomHit.x - goal.tx) * f, -2400, 2400);
+      goal.tz = clamp(goal.tz + (zoomHit.z - goal.tz) * f, -2200, 2200);
+    }
     if (reduced) Object.assign(rig, goal);
   }, { passive: false });
 
-  const ndc = new THREE.Vector2();
   function pick(e) {
     const box = canvas.getBoundingClientRect();
     ndc.set(((e.clientX - box.left) / box.width) * 2 - 1, -((e.clientY - box.top) / box.height) * 2 + 1);
@@ -577,7 +633,7 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
       const x = lerp(pos.x, camera.position.x, u);
       const y = lerp(pos.y, camera.position.y, u);
       const z = lerp(pos.z, camera.position.z, u);
-      if (y < coneH(Math.hypot(x, z)) - 8) return true;
+      if (y < baseH(x, z) - 8) return true;
     }
     return false;
   }
@@ -589,7 +645,11 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
     if (on) a.node.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) translate(-50%,-100%)`;
   }
   function placeLabels() {
-    labelRoot.classList.toggle('far', rig.dist > 1700);
+    const far = rig.dist > 1700;
+    if (far !== labelRoot.classList.contains('far')) {
+      labelRoot.classList.toggle('far', far);
+      anchors.forEach((a) => { a.w = 0; });
+    }
     const w = window.innerWidth; const h = window.innerHeight;
     taken.length = 0;
     const ranked = anchors.map((a) => {
@@ -598,6 +658,8 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
       let score = d;
       if (a.kind === 'phase') score = -1e6 + d;
       if (a.kind === 'you') score = -3e6;
+      if (a.kind === 'mile') score = -2e5 + d;
+      if (a.kind === 'exam') score = -1e5 + d;
       if (a.topic && a.topic.id === selectedTopic) score = -2e6;
       else if (a.kind === 'exam' && (a.node.classList.contains('due') || a.phase?.id === active)) score = -5e5 + d;
       else if (a.phase?.id === active) score = -4e5 + d;
@@ -606,8 +668,8 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
     ranked.forEach(({ a, d }) => {
       const related = a.phase?.id === active;
       let want = !a.node.hidden;
-      if (a.kind === 'topic') want = want && (related || d < 1050);
-      if (a.kind === 'exam') want = want && (related || d < 1700 || a.node.classList.contains('due'));
+      if (a.kind === 'mile') want = want && (a.major || rig.dist < 3400);
+      
       if (want) {
         screen.copy(a.pos).project(camera);
         if (screen.z > 1 || Math.abs(screen.x) > 1.2 || Math.abs(screen.y) > 1.2) want = false;
@@ -626,6 +688,8 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
           a.lift = lerp(a.lift ?? 0, y - py, reduced ? 1 : 0.14);
           y -= a.lift;
           taken.push(boxAt(y));
+        } else if (a.kind === 'topic' && labelRoot.classList.contains('far')) {
+          // Far away every topic stays pinned, even when pins touch.
         } else if (hits(boxAt(y))) want = false;
         else taken.push(boxAt(y));
       }
@@ -656,13 +720,12 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
         if (whole !== journey.last) { journey.last = whole; month = whole; journey.onMonth(whole); }
         const p = roadPoint(roadT(monthF));
         goal.tx = p.x; goal.ty = p.y + 10; goal.tz = p.z;
-        goal.dist = 560; goal.pol = 1.0;
-        goal.az = nearestAngle(rig.az, outerAngle(p) + 0.42);
+        goal.dist = 1050; goal.pol = 0.86;
+        goal.az = nearestAngle(rig.az, FRONT + Math.sin(monthF * 0.35) * 0.22);
       }
     } else {
       monthF += (monthTarget + 0.5 - monthF) * (reduced ? 1 : 1 - Math.exp(-dt * 4));
     }
-    if (idle && !reduced) goal.az += dt * 0.035;
 
     const ease = reduced ? 1 : 1 - Math.exp(-dt * 3.2);
     rig.tx += (goal.tx - rig.tx) * ease;
@@ -703,7 +766,7 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
       const p = trail.phase;
       setLit(trail, (monthF - p.start) / (p.end + 1 - p.start));
       const fade = hoverFade(p.id);
-      trail.base.material.opacity = 0.6 * fade;
+      trail.base.material.opacity = 0.72 * fade;
       trail.lit.material.opacity = fade;
     });
 
@@ -721,8 +784,8 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
       const p = trails[id].phase;
       const on = inFocus(p);
       const pulse = reduced ? 1 : 1 + Math.sin(time * 2.2) * 0.08;
-      t.halo.scale.setScalar((on ? 240 : 130) * (on ? pulse : 1));
-      t.halo.material.opacity = (on ? 0.95 : 0.5) * hoverFade(id);
+      t.halo.scale.setScalar((on ? 150 : 90) * (on ? pulse : 1));
+      t.halo.material.opacity = (on ? 0.6 : 0.3) * hoverFade(id);
       t.crown.material.emissiveIntensity = on ? 1.7 : 0.8;
       if (!reduced) t.crown.rotation.y = time * 0.5;
     });
@@ -781,9 +844,10 @@ export function createScene({ canvas, labelRoot, data, labels, isDone, callbacks
   const api = {
     overview, focusPhase, focusTopic, focusMonth, setMonth, setActive, setPanelShift, sync, resize, refreshTheme, celebrate,
     startJourney, stopJourney,
-    orbit: (d) => { goal.az += d; idle = false; },
-    tilt: (d) => { goal.pol = clamp(goal.pol + d, 0.22, 1.5); idle = false; },
-    zoom: (f) => { goal.dist = clamp(goal.dist * f, 120, 6000); idle = false; },
+    pan: panBy,
+    orbit: (d) => { goal.az += d; },
+    tilt: (d) => { goal.pol = clamp(goal.pol + d, 0.22, 1.5); },
+    zoom: (f) => { goal.dist = clamp(goal.dist * f, 200, 9000); },
     pause: (value) => { running = !value; },
     debug: () => ({ rig: { ...rig }, goal: { ...goal }, monthF, month, active, selectedTopic, shown: anchors.filter((a) => a.shown).length, anchors: anchors.length, calls: renderer.info.render.calls, tris: renderer.info.render.triangles }),
   };

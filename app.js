@@ -127,6 +127,10 @@ function phaseVideoStats(phase) {
 /* Labels the 3D world pins to its objects */
 
 const labelFactory = {
+  mile: (m) => el('div', {
+    class: `wnode mile${m === 0 || m === 36 ? ' end' : ''}`, 'aria-hidden': 'true',
+    text: m === 0 ? `Start · ${monthLabel(1)}` : m === 36 ? `Summit · ${monthLabel(36)}` : `Month ${m}`,
+  }),
   you: () => el('div', { class: 'wnode you', id: 'you', 'aria-hidden': 'true' }),
   phase: (phase) => el('button', {
     class: 'wnode plabel', type: 'button', style: `--c:${color(phase)}`, 'data-phase': phase.id,
@@ -137,18 +141,18 @@ const labelFactory = {
     onfocus: () => hoverPhase(phase.id),
     onblur: () => hoverPhase(null),
   },
-  el('span', { class: 'plabel-top' }, el('i', { class: 'swatch' }), el('span', { text: `Phase ${phase.n}` }), el('em', { 'data-state': phase.id })),
-  el('strong', { text: phase.short }),
+  el('span', { class: 'plabel-top' }, el('b', { class: 'plabel-n', text: String(phase.n) }), el('strong', { text: phase.short }), el('em', { 'data-state': phase.id })),
   el('span', { class: 'plabel-sub', 'data-sub': phase.id }),
   el('span', { class: 'plabel-meter' }, el('i', { 'data-meter': phase.id }))),
   topic: (phase, topic) => el('div', {
-    class: 'wnode moon', style: `--c:${color(phase)}`, 'data-moon': topic.id, 'data-phase': phase.id,
+    class: 'wnode moon', style: `--c:${color(phase)}`, 'data-moon': topic.id, 'data-phase': phase.id, title: topic.title,
+    onclick: (event) => { if (!event.target.classList.contains('tick')) focusTopic(phase.id, topic.id); },
   },
   el('input', {
     class: 'tick', type: 'checkbox', 'aria-label': `Done: ${topic.title}`, 'data-key': `t:${topic.id}`,
     onchange: (event) => setDone(`t:${topic.id}`, event.target.checked),
   }),
-  el('button', { class: 'moon-label', type: 'button', text: topic.short, onclick: () => focusTopic(phase.id, topic.id) })),
+  el('button', { class: 'moon-label', type: 'button', text: topic.short })),
   exam: (phase, cert) => el('button', {
     class: `wnode satellite${cert.core ? '' : ' opt'}`, type: 'button', style: `--c:${color(phase)}`, 'data-phase': phase.id,
     'data-cert': certKey(cert), 'data-month': cert.month, 'data-exam': cert.core ? 'core' : 'optional', text: cert.exam,
@@ -242,10 +246,10 @@ function bindKeys() {
     }
     if (typing || !$('plan-view').hidden || !$('palette').hidden || !world) return;
     if ($('panel').contains(document.activeElement) || document.activeElement.type === 'range') return;
-    if (event.key === 'ArrowLeft') world.orbit(0.18);
-    else if (event.key === 'ArrowRight') world.orbit(-0.18);
-    else if (event.key === 'ArrowUp') world.tilt(-0.08);
-    else if (event.key === 'ArrowDown') world.tilt(0.08);
+    if (event.key === 'ArrowLeft') world.pan(90, 0);
+    else if (event.key === 'ArrowRight') world.pan(-90, 0);
+    else if (event.key === 'ArrowUp') world.pan(0, 90);
+    else if (event.key === 'ArrowDown') world.pan(0, -90);
     else if (event.key === '+' || event.key === '=') world.zoom(0.8);
     else if (event.key === '-') world.zoom(1.25);
     else if (event.key === '0') overviewAll();
