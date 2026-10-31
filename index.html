@@ -34,6 +34,7 @@
     <div class="hud-actions">
       <button class="hud-btn" id="open-search" type="button" aria-label="Search everything"><span>Search</span><kbd>/</kbd></button>
       <button class="hud-btn" id="fit" type="button">Overview</button>
+      <button class="hud-btn" id="to-library" type="button">Library</button>
       <button class="hud-btn" id="to-plan" type="button">Plan</button>
       <button class="hud-btn" id="theme" type="button">Theme</button>
     </div>
@@ -67,6 +68,7 @@
   <div class="bar-top">
     <div class="wrap bar-inner">
       <button class="primary" id="to-map" type="button">← Back to the map</button>
+      <button class="ghost" id="plan-library" type="button">Library</button>
       <nav aria-label="Sections">
         <a href="#ninety">First 90 days</a>
         <a href="#exams">Exams</a>
@@ -165,6 +167,26 @@
     <button class="ghost" id="reset" type="button">Reset</button>
   </div>
 </footer>
+</div>
+
+<div id="library-view" hidden>
+  <div class="bar-top">
+    <div class="wrap bar-inner"><button class="primary" id="lib-back" type="button">← Back</button></div>
+  </div>
+  <header class="hero wrap">
+    <p class="eyebrow">Courses, labs, docs and reading for every topic</p>
+    <h1>Library</h1>
+  </header>
+  <main class="wrap">
+    <div class="lib-tools">
+      <input id="lib-search" type="search" placeholder="Search by title or topic" aria-label="Search the library">
+      <label class="dock-opt"><input id="lib-hide" type="checkbox"> Hide finished</label>
+      <span class="lib-count" id="lib-count" role="status"></span>
+    </div>
+    <div class="chips" id="lib-kinds" role="group" aria-label="Filter by type"></div>
+    <div class="chips" id="lib-phases" role="group" aria-label="Filter by phase"></div>
+    <ul class="lib-list" id="lib-list"></ul>
+  </main>
 </div>
 
 <div class="tip" id="tip" role="tooltip" hidden></div>

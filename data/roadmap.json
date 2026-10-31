@@ -148,7 +148,39 @@
       "Shared memory and Unix sockets"
      ],
      "lab": "Write a shell pipeline by hand with fork, pipe and dup2, then compare it to strace of a real shell.",
-     "check": "What happens to a child's open file descriptors across exec, and how does O_CLOEXEC change that?"
+     "check": "What happens to a child's open file descriptors across exec, and how does O_CLOEXEC change that?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "OSTEP: Process API",
+       "url": "https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-api.pdf"
+      },
+      {
+       "kind": "docs",
+       "title": "fork(2) man page",
+       "url": "https://man7.org/linux/man-pages/man2/fork.2.html"
+      },
+      {
+       "kind": "docs",
+       "title": "signal(7) man page",
+       "url": "https://man7.org/linux/man-pages/man7/signal.7.html"
+      },
+      {
+       "kind": "docs",
+       "title": "pipe(7) man page",
+       "url": "https://man7.org/linux/man-pages/man7/pipe.7.html"
+      },
+      {
+       "kind": "lab",
+       "title": "MIT 6.1810 labs: xv6 utilities and syscalls",
+       "url": "https://pdos.csail.mit.edu/6.1810/2024/schedule.html"
+      },
+      {
+       "kind": "read",
+       "title": "Beej's Guide to Interprocess Communication",
+       "url": "https://beej.us/guide/bgipc/"
+      }
+     ]
     },
     {
      "title": "Virtual memory, page cache, OOM killer, huge pages, swap",
@@ -181,7 +213,39 @@
       "Huge pages and swap behaviour"
      ],
      "lab": "Trigger the OOM killer inside a memory-limited cgroup, then read the kernel log and explain its choice.",
-     "check": "Why can a host with little 'free' memory be perfectly healthy?"
+     "check": "Why can a host with little 'free' memory be perfectly healthy?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "OSTEP: Virtualization chapters",
+       "url": "https://pages.cs.wisc.edu/~remzi/OSTEP/"
+      },
+      {
+       "kind": "docs",
+       "title": "Kernel docs: Memory Management",
+       "url": "https://docs.kernel.org/admin-guide/mm/index.html"
+      },
+      {
+       "kind": "docs",
+       "title": "proc(5): /proc/meminfo and friends",
+       "url": "https://man7.org/linux/man-pages/man5/proc.5.html"
+      },
+      {
+       "kind": "read",
+       "title": "Linux Ate My RAM",
+       "url": "https://www.linuxatemyram.com/"
+      },
+      {
+       "kind": "read",
+       "title": "What every programmer should know about memory",
+       "url": "https://lwn.net/Articles/250967/"
+      },
+      {
+       "kind": "docs",
+       "title": "Kernel docs: Transparent Hugepage",
+       "url": "https://docs.kernel.org/admin-guide/mm/transhuge.html"
+      }
+     ]
     },
     {
      "title": "Scheduler (EEVDF/CFS), load average, CPU pinning, NUMA",
@@ -205,7 +269,39 @@
       "NUMA locality"
      ],
      "lab": "Pin a CPU-bound process with taskset, then measure the difference with perf stat and numastat.",
-     "check": "Why can load average be high while CPU usage is low?"
+     "check": "Why can load average be high while CPU usage is low?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Kernel docs: EEVDF Scheduler",
+       "url": "https://docs.kernel.org/scheduler/sched-eevdf.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Kernel docs: CFS Scheduler",
+       "url": "https://docs.kernel.org/scheduler/sched-design-CFS.html"
+      },
+      {
+       "kind": "read",
+       "title": "Brendan Gregg: Linux Load Averages",
+       "url": "https://www.brendangregg.com/blog/2017-08-08/linux-load-averages.html"
+      },
+      {
+       "kind": "docs",
+       "title": "sched(7) man page",
+       "url": "https://man7.org/linux/man-pages/man7/sched.7.html"
+      },
+      {
+       "kind": "docs",
+       "title": "numa(7) man page",
+       "url": "https://man7.org/linux/man-pages/man7/numa.7.html"
+      },
+      {
+       "kind": "read",
+       "title": "LWN: An EEVDF CPU scheduler for Linux",
+       "url": "https://lwn.net/Articles/925371/"
+      }
+     ]
     },
     {
      "title": "Namespaces, cgroups v2, capabilities, seccomp",
@@ -238,7 +334,44 @@
       "seccomp filters"
      ],
      "lab": "Build a container with unshare and a cgroup by hand, with no Docker involved.",
-     "check": "Which kernel features isolate what a process can see, and which limit what it can use?"
+     "check": "Which kernel features isolate what a process can see, and which limit what it can use?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "namespaces(7) man page",
+       "url": "https://man7.org/linux/man-pages/man7/namespaces.7.html"
+      },
+      {
+       "kind": "docs",
+       "title": "cgroups(7) man page",
+       "url": "https://man7.org/linux/man-pages/man7/cgroups.7.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Kernel docs: Control Group v2",
+       "url": "https://docs.kernel.org/admin-guide/cgroup-v2.html"
+      },
+      {
+       "kind": "docs",
+       "title": "capabilities(7) man page",
+       "url": "https://man7.org/linux/man-pages/man7/capabilities.7.html"
+      },
+      {
+       "kind": "docs",
+       "title": "seccomp(2) man page",
+       "url": "https://man7.org/linux/man-pages/man2/seccomp.2.html"
+      },
+      {
+       "kind": "read",
+       "title": "LWN: Namespaces in operation",
+       "url": "https://lwn.net/Articles/531114/"
+      },
+      {
+       "kind": "lab",
+       "title": "Containers from scratch (Liz Rice)",
+       "url": "https://github.com/lizrice/containers-from-scratch"
+      }
+     ]
     },
     {
      "title": "systemd internals, boot, journald, udev",
@@ -271,7 +404,39 @@
       "udev rules"
      ],
      "lab": "Write a hardened service unit, and use systemd-analyze blame and security to review it.",
-     "check": "What's the difference between a unit's Wants= and Requires=?"
+     "check": "What's the difference between a unit's Wants= and Requires=?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "systemd documentation index",
+       "url": "https://www.freedesktop.org/software/systemd/man/latest/index.html"
+      },
+      {
+       "kind": "docs",
+       "title": "systemd.unit(5)",
+       "url": "https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html"
+      },
+      {
+       "kind": "docs",
+       "title": "journalctl(1)",
+       "url": "https://www.freedesktop.org/software/systemd/man/latest/journalctl.html"
+      },
+      {
+       "kind": "docs",
+       "title": "bootup(7): the boot process",
+       "url": "https://www.freedesktop.org/software/systemd/man/latest/bootup.html"
+      },
+      {
+       "kind": "read",
+       "title": "Arch Wiki: systemd",
+       "url": "https://wiki.archlinux.org/title/Systemd"
+      },
+      {
+       "kind": "docs",
+       "title": "udev(7)",
+       "url": "https://man7.org/linux/man-pages/man7/udev.7.html"
+      }
+     ]
     },
     {
      "title": "Filesystems and storage: ext4/XFS, LVM, I/O, fsync",
@@ -304,7 +469,39 @@
       "fsync and durability"
      ],
      "lab": "Grow an LVM volume online, then measure sync and buffered writes with fio.",
-     "check": "When has a write actually reached stable storage?"
+     "check": "When has a write actually reached stable storage?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "OSTEP: Persistence chapters",
+       "url": "https://pages.cs.wisc.edu/~remzi/OSTEP/"
+      },
+      {
+       "kind": "docs",
+       "title": "Kernel docs: ext4",
+       "url": "https://docs.kernel.org/admin-guide/ext4.html"
+      },
+      {
+       "kind": "docs",
+       "title": "fsync(2) man page",
+       "url": "https://man7.org/linux/man-pages/man2/fsync.2.html"
+      },
+      {
+       "kind": "docs",
+       "title": "fio documentation",
+       "url": "https://fio.readthedocs.io/en/latest/fio_doc.html"
+      },
+      {
+       "kind": "read",
+       "title": "Arch Wiki: LVM",
+       "url": "https://wiki.archlinux.org/title/LVM"
+      },
+      {
+       "kind": "read",
+       "title": "Dan Luu: Files are hard",
+       "url": "https://danluu.com/file-consistency/"
+      }
+     ]
     },
     {
      "title": "Observability: strace, perf, bpftrace/eBPF, flame graphs, USE",
@@ -346,7 +543,44 @@
       "Reading flame graphs"
      ],
      "lab": "Profile a real workload with perf, generate a flame graph, and name the bottleneck.",
-     "check": "For a slow host, what are the USE checks for CPU, memory, disk and network?"
+     "check": "For a slow host, what are the USE checks for CPU, memory, disk and network?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Brendan Gregg: The USE Method",
+       "url": "https://www.brendangregg.com/usemethod.html"
+      },
+      {
+       "kind": "read",
+       "title": "Brendan Gregg: Flame Graphs",
+       "url": "https://www.brendangregg.com/flamegraphs.html"
+      },
+      {
+       "kind": "read",
+       "title": "Brendan Gregg: Linux perf examples",
+       "url": "https://www.brendangregg.com/perf.html"
+      },
+      {
+       "kind": "read",
+       "title": "Linux Performance Analysis in 60,000 ms",
+       "url": "https://netflixtechblog.com/linux-performance-analysis-in-60-000-milliseconds-accc10403c55"
+      },
+      {
+       "kind": "docs",
+       "title": "bpftrace documentation",
+       "url": "https://bpftrace.org/docs/"
+      },
+      {
+       "kind": "read",
+       "title": "What is eBPF?",
+       "url": "https://ebpf.io/what-is-ebpf/"
+      },
+      {
+       "kind": "lab",
+       "title": "Learning eBPF code examples",
+       "url": "https://github.com/lizrice/learning-ebpf"
+      }
+     ]
     },
     {
      "title": "Windows: AD DS, Group Policy, PowerShell, event logs",
@@ -397,7 +631,39 @@
       "Event logs and Sysinternals"
      ],
      "lab": "Stand up a domain controller in a VM with PowerShell and apply one GPO.",
-     "check": "How does a Kerberos service ticket reach a client?"
+     "check": "How does a Kerberos service ticket reach a client?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Microsoft Learn: AD DS overview",
+       "url": "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview"
+      },
+      {
+       "kind": "docs",
+       "title": "Microsoft Learn: Group Policy overview",
+       "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/hh831791(v=ws.11)"
+      },
+      {
+       "kind": "docs",
+       "title": "PowerShell documentation",
+       "url": "https://learn.microsoft.com/en-us/powershell/scripting/overview"
+      },
+      {
+       "kind": "read",
+       "title": "PowerShell 101",
+       "url": "https://learn.microsoft.com/en-us/powershell/scripting/learn/ps101/00-introduction"
+      },
+      {
+       "kind": "docs",
+       "title": "Sysinternals suite",
+       "url": "https://learn.microsoft.com/en-us/sysinternals/"
+      },
+      {
+       "kind": "docs",
+       "title": "Windows Server documentation",
+       "url": "https://learn.microsoft.com/en-us/windows-server/"
+      }
+     ]
     },
     {
      "title": "LFCS exam practice",
@@ -422,7 +688,34 @@
       "Troubleshooting without notes"
      ],
      "lab": "Time yourself on objective-based tasks, using only man pages for reference.",
-     "check": "Can you finish each exam domain's tasks without searching the web?"
+     "check": "Can you finish each exam domain's tasks without searching the web?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "LFCS exam page and domains",
+       "url": "https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/"
+      },
+      {
+       "kind": "docs",
+       "title": "Exam candidate handbook",
+       "url": "https://docs.linuxfoundation.org/tc-docs/certification/lf-handbook2"
+      },
+      {
+       "kind": "lab",
+       "title": "Over The Wire: Bandit",
+       "url": "https://overthewire.org/wargames/bandit/"
+      },
+      {
+       "kind": "lab",
+       "title": "Linux Upskill Challenge",
+       "url": "https://linuxupskillchallenge.org/"
+      },
+      {
+       "kind": "read",
+       "title": "The Linux Command Line (free book)",
+       "url": "https://linuxcommand.org/tlcl.php"
+      }
+     ]
     }
    ],
    "why": "Every abstraction above this one (containers, Kubernetes, cloud VMs) is built from Linux primitives. Principal engineers debug from the bottom up: syscalls, scheduler, page cache, namespaces, cgroups. Windows matters too, because enterprise clients run Active Directory and hybrid estates.",
@@ -554,7 +847,39 @@
       "Spanning tree basics"
      ],
      "lab": "Build a two-VLAN network in Packet Tracer and capture its ARP traffic.",
-     "check": "What happens at layer 2 when a host first pings a neighbour?"
+     "check": "What happens at layer 2 when a host first pings a neighbour?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Cloudflare: What is the OSI model?",
+       "url": "https://www.cloudflare.com/learning/ddos/glossary/open-systems-interconnection-model-osi/"
+      },
+      {
+       "kind": "read",
+       "title": "Practical Networking: Networking Fundamentals",
+       "url": "https://www.practicalnetworking.net/"
+      },
+      {
+       "kind": "docs",
+       "title": "Linux bridge and VLAN: ip-link(8)",
+       "url": "https://man7.org/linux/man-pages/man8/ip-link.8.html"
+      },
+      {
+       "kind": "lab",
+       "title": "containerlab quickstart",
+       "url": "https://containerlab.dev/quickstart/"
+      },
+      {
+       "kind": "read",
+       "title": "Julia Evans: Networking zines and posts",
+       "url": "https://jvns.ca/categories/networking/"
+      },
+      {
+       "kind": "lab",
+       "title": "Wireshark sample captures",
+       "url": "https://wiki.wireshark.org/SampleCaptures"
+      }
+     ]
     },
     {
      "title": "IPv4/IPv6, subnetting, NAT, conntrack",
@@ -567,6 +892,15 @@
        "by": "Jeremy's IT Lab",
        "thumb": "https://i.ytimg.com/vi/H8W9oMNSuwo/hqdefault.jpg",
        "count": 126
+      },
+      {
+       "id": "PLBlnK6fEyqRh1et0MyvHfh9_nBfI0cfkd",
+       "kind": "playlist",
+       "title": "Subnetting",
+       "by": "Neso Academy",
+       "thumb": "https://i.ytimg.com/vi/UHRPtNZ_Rz4/hqdefault.jpg",
+       "note": "Subnetting drills, step by step.",
+       "count": 20
       }
      ],
      "id": "network-2",
@@ -578,7 +912,39 @@
       "The conntrack table"
      ],
      "lab": "Design a non-overlapping multi-region IP plan, then inspect live NAT with conntrack -L.",
-     "check": "What symptoms appear when the conntrack table fills up?"
+     "check": "What symptoms appear when the conntrack table fills up?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "RFC 8200: IPv6",
+       "url": "https://www.rfc-editor.org/rfc/rfc8200"
+      },
+      {
+       "kind": "docs",
+       "title": "RFC 4787: NAT behaviour for UDP",
+       "url": "https://www.rfc-editor.org/rfc/rfc4787"
+      },
+      {
+       "kind": "read",
+       "title": "Cloudflare: What is a subnet?",
+       "url": "https://www.cloudflare.com/learning/network-layer/what-is-a-subnet/"
+      },
+      {
+       "kind": "docs",
+       "title": "conntrack-tools project",
+       "url": "https://www.netfilter.org/projects/conntrack-tools/index.html"
+      },
+      {
+       "kind": "lab",
+       "title": "Hurricane Electric IPv6 Certification",
+       "url": "https://ipv6.he.net/certification/"
+      },
+      {
+       "kind": "read",
+       "title": "Tailscale: How NAT traversal works",
+       "url": "https://tailscale.com/blog/how-nat-traversal-works"
+      }
+     ]
     },
     {
      "title": "TCP deep dive: windows, congestion control, retransmits",
@@ -602,7 +968,44 @@
       "Retransmissions and SACK"
      ],
      "lab": "Add loss with tc netem, then watch retransmits and the congestion window in Wireshark.",
-     "check": "How do you tell a receiver-limited transfer from a congestion-limited one in a capture?"
+     "check": "How do you tell a receiver-limited transfer from a congestion-limited one in a capture?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "RFC 9293: TCP",
+       "url": "https://www.rfc-editor.org/rfc/rfc9293"
+      },
+      {
+       "kind": "read",
+       "title": "High Performance Browser Networking: TCP",
+       "url": "https://hpbn.co/building-blocks-of-tcp/"
+      },
+      {
+       "kind": "docs",
+       "title": "Linux TCP: tcp(7)",
+       "url": "https://man7.org/linux/man-pages/man7/tcp.7.html"
+      },
+      {
+       "kind": "docs",
+       "title": "ss(8) man page",
+       "url": "https://man7.org/linux/man-pages/man8/ss.8.html"
+      },
+      {
+       "kind": "read",
+       "title": "Cloudflare: Optimizing TCP for high WAN throughput",
+       "url": "https://blog.cloudflare.com/optimizing-tcp-for-high-throughput-and-low-latency/"
+      },
+      {
+       "kind": "read",
+       "title": "BBR: Congestion-Based Congestion Control",
+       "url": "https://research.google/pubs/bbr-congestion-based-congestion-control-2/"
+      },
+      {
+       "kind": "read",
+       "title": "An Introduction to Computer Networks (free book)",
+       "url": "https://intronetworks.cs.luc.edu/"
+      }
+     ]
     },
     {
      "title": "Routing: static, OSPF, BGP, ECMP",
@@ -635,7 +1038,39 @@
       "ECMP"
      ],
      "lab": "Build two ASNs in containerlab with FRR, then steer traffic with local-pref.",
-     "check": "Which comes first in BGP path selection: local-pref or AS path length?"
+     "check": "Which comes first in BGP path selection: local-pref or AS path length?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Cloudflare: What is BGP?",
+       "url": "https://www.cloudflare.com/learning/security/glossary/what-is-bgp/"
+      },
+      {
+       "kind": "docs",
+       "title": "FRRouting documentation",
+       "url": "https://docs.frrouting.org/en/latest/"
+      },
+      {
+       "kind": "docs",
+       "title": "RFC 4271: BGP-4",
+       "url": "https://www.rfc-editor.org/rfc/rfc4271"
+      },
+      {
+       "kind": "docs",
+       "title": "RFC 2328: OSPFv2",
+       "url": "https://www.rfc-editor.org/rfc/rfc2328"
+      },
+      {
+       "kind": "lab",
+       "title": "Containerlab FRR example lab",
+       "url": "https://containerlab.dev/lab-examples/frr01/"
+      },
+      {
+       "kind": "read",
+       "title": "APNIC Blog",
+       "url": "https://blog.apnic.net/"
+      }
+     ]
     },
     {
      "title": "DNS end to end: recursion, DNSSEC, split-horizon",
@@ -659,7 +1094,44 @@
       "Split-horizon DNS"
      ],
      "lab": "Trace a lookup from the root with dig +trace, and capture it in Wireshark.",
-     "check": "Why might a DNS change still not be visible after the TTL has expired?"
+     "check": "Why might a DNS change still not be visible after the TTL has expired?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Cloudflare: What is DNS?",
+       "url": "https://www.cloudflare.com/learning/dns/what-is-dns/"
+      },
+      {
+       "kind": "read",
+       "title": "Julia Evans: How DNS works (Mess With DNS)",
+       "url": "https://messwithdns.net/"
+      },
+      {
+       "kind": "docs",
+       "title": "RFC 1034: DNS concepts",
+       "url": "https://www.rfc-editor.org/rfc/rfc1034"
+      },
+      {
+       "kind": "docs",
+       "title": "RFC 8499: DNS terminology",
+       "url": "https://www.rfc-editor.org/rfc/rfc8499"
+      },
+      {
+       "kind": "read",
+       "title": "DNSSEC: How it works (Cloudflare)",
+       "url": "https://www.cloudflare.com/learning/dns/dnssec/how-dnssec-works/"
+      },
+      {
+       "kind": "docs",
+       "title": "Unbound documentation",
+       "url": "https://unbound.docs.nlnetlabs.nl/en/latest/"
+      },
+      {
+       "kind": "lab",
+       "title": "DNSViz: analyse a domain",
+       "url": "https://dnsviz.net/"
+      }
+     ]
     },
     {
      "title": "TLS 1.3, PKI, mTLS, certificate lifecycle",
@@ -683,7 +1155,44 @@
       "Certificate lifecycle and rotation"
      ],
      "lab": "Build a small CA with mTLS between two services, then audit it with testssl.sh.",
-     "check": "How many round trips does a full TLS 1.3 handshake add, and what does 0-RTT risk?"
+     "check": "How many round trips does a full TLS 1.3 handshake add, and what does 0-RTT risk?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "The Illustrated TLS 1.3 Connection",
+       "url": "https://tls13.xargs.org/"
+      },
+      {
+       "kind": "docs",
+       "title": "RFC 8446: TLS 1.3",
+       "url": "https://www.rfc-editor.org/rfc/rfc8446"
+      },
+      {
+       "kind": "read",
+       "title": "Bulletproof TLS Guide",
+       "url": "https://www.feistyduck.com/library/bulletproof-tls-guide/"
+      },
+      {
+       "kind": "docs",
+       "title": "Let's Encrypt: How It Works",
+       "url": "https://letsencrypt.org/how-it-works/"
+      },
+      {
+       "kind": "docs",
+       "title": "cert-manager documentation",
+       "url": "https://cert-manager.io/docs/"
+      },
+      {
+       "kind": "lab",
+       "title": "SSL Labs server test",
+       "url": "https://www.ssllabs.com/ssltest/"
+      },
+      {
+       "kind": "read",
+       "title": "Smallstep: Everything PKI",
+       "url": "https://smallstep.com/blog/everything-pki/"
+      }
+     ]
     },
     {
      "title": "Load balancing, anycast, CDNs, HTTP/2 and HTTP/3",
@@ -716,7 +1225,44 @@
       "QUIC"
      ],
      "lab": "Put HAProxy in front of two backends, and compare L4 and L7 behaviour during a failure.",
-     "check": "Which head-of-line blocking does HTTP/2 leave unsolved, and how does QUIC address it?"
+     "check": "Which head-of-line blocking does HTTP/2 leave unsolved, and how does QUIC address it?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Cloudflare: What is load balancing?",
+       "url": "https://www.cloudflare.com/learning/performance/what-is-load-balancing/"
+      },
+      {
+       "kind": "read",
+       "title": "HTTP/3 explained",
+       "url": "https://http3-explained.haxx.se/"
+      },
+      {
+       "kind": "read",
+       "title": "High Performance Browser Networking: HTTP/2",
+       "url": "https://hpbn.co/http2/"
+      },
+      {
+       "kind": "docs",
+       "title": "Envoy: Life of a Request",
+       "url": "https://www.envoyproxy.io/docs/envoy/latest/intro/life_of_a_request"
+      },
+      {
+       "kind": "docs",
+       "title": "Envoy documentation",
+       "url": "https://www.envoyproxy.io/docs/envoy/latest/"
+      },
+      {
+       "kind": "read",
+       "title": "Maglev: Google's network load balancer",
+       "url": "https://research.google/pubs/maglev-a-fast-and-reliable-software-network-load-balancer/"
+      },
+      {
+       "kind": "docs",
+       "title": "HAProxy configuration manual",
+       "url": "https://docs.haproxy.org/"
+      }
+     ]
     },
     {
      "title": "Linux networking: nftables, tc, netns, VXLAN, WireGuard",
@@ -768,7 +1314,49 @@
       "VXLAN and WireGuard"
      ],
      "lab": "Connect two network namespaces over a VXLAN tunnel, and find the right MTU.",
-     "check": "How do you recognise an MTU black hole, and how would you confirm it?"
+     "check": "How do you recognise an MTU black hole, and how would you confirm it?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "nftables wiki",
+       "url": "https://wiki.nftables.org/wiki-nftables/index.php/Main_Page"
+      },
+      {
+       "kind": "docs",
+       "title": "tc(8) man page",
+       "url": "https://man7.org/linux/man-pages/man8/tc.8.html"
+      },
+      {
+       "kind": "docs",
+       "title": "ip-netns(8) man page",
+       "url": "https://man7.org/linux/man-pages/man8/ip-netns.8.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Kernel docs: VXLAN",
+       "url": "https://docs.kernel.org/networking/vxlan.html"
+      },
+      {
+       "kind": "docs",
+       "title": "WireGuard quick start",
+       "url": "https://www.wireguard.com/quickstart/"
+      },
+      {
+       "kind": "read",
+       "title": "Packagecloud: Monitoring the Linux networking stack",
+       "url": "https://blog.packagecloud.io/monitoring-tuning-linux-networking-stack-receiving-data/"
+      },
+      {
+       "kind": "lab",
+       "title": "iximiuz Labs: networking",
+       "url": "https://labs.iximiuz.com/"
+      },
+      {
+       "kind": "read",
+       "title": "Container networking is simple",
+       "url": "https://iximiuz.com/en/posts/container-networking-is-simple/"
+      }
+     ]
     }
    ],
    "why": "Most of the hardest production incidents are network incidents: MTU black holes, asymmetric routing, DNS TTLs, conntrack exhaustion, TLS misconfiguration. Cloud VPCs, CNIs and service meshes are all networking underneath.",
@@ -935,7 +1523,44 @@
       "Makefiles"
      ],
      "lab": "Write a dynamic array in C from scratch, with tests.",
-     "check": "Name three kinds of undefined behaviour a compiler may exploit."
+     "check": "Name three kinds of undefined behaviour a compiler may exploit.",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Beej's Guide to C Programming",
+       "url": "https://beej.us/guide/bgc/"
+      },
+      {
+       "kind": "read",
+       "title": "Modern C (free PDF page)",
+       "url": "https://gustedt.gitlabpages.inria.fr/modern-c/"
+      },
+      {
+       "kind": "docs",
+       "title": "GNU Make manual",
+       "url": "https://www.gnu.org/software/make/manual/make.html"
+      },
+      {
+       "kind": "docs",
+       "title": "cppreference: C language",
+       "url": "https://en.cppreference.com/w/c"
+      },
+      {
+       "kind": "read",
+       "title": "What Every C Programmer Should Know About Undefined Behavior",
+       "url": "https://blog.llvm.org/2011/05/what-every-c-programmer-should-know.html"
+      },
+      {
+       "kind": "lab",
+       "title": "Exercism: C track",
+       "url": "https://exercism.org/tracks/c"
+      },
+      {
+       "kind": "lab",
+       "title": "Compiler Explorer",
+       "url": "https://godbolt.org/"
+      }
+     ]
     },
     {
      "title": "C tooling: gdb, valgrind, ASan",
@@ -959,7 +1584,44 @@
       "Sanitizers"
      ],
      "lab": "Plant a use-after-free, find it with ASan, then diagnose a core dump in gdb.",
-     "check": "What can ASan catch that valgrind can't, and the reverse?"
+     "check": "What can ASan catch that valgrind can't, and the reverse?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "GDB documentation",
+       "url": "https://sourceware.org/gdb/current/onlinedocs/gdb.html/"
+      },
+      {
+       "kind": "docs",
+       "title": "Valgrind Quick Start",
+       "url": "https://valgrind.org/docs/manual/quick-start.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Clang AddressSanitizer",
+       "url": "https://clang.llvm.org/docs/AddressSanitizer.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Clang UndefinedBehaviorSanitizer",
+       "url": "https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html"
+      },
+      {
+       "kind": "read",
+       "title": "Beej's Quick Guide to GDB",
+       "url": "https://beej.us/guide/bggdb/"
+      },
+      {
+       "kind": "docs",
+       "title": "rr debugger",
+       "url": "https://rr-project.org/"
+      },
+      {
+       "kind": "lab",
+       "title": "Microcorruption: debugger CTF",
+       "url": "https://microcorruption.com/"
+      }
+     ]
     },
     {
      "title": "Systems programming: sockets, epoll/io_uring, threads vs event loops",
@@ -993,7 +1655,44 @@
       "Threads vs event loops"
      ],
      "lab": "Write an epoll echo server and load-test it with wrk.",
-     "check": "What's the difference between level-triggered and edge-triggered epoll?"
+     "check": "What's the difference between level-triggered and edge-triggered epoll?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Beej's Guide to Network Programming",
+       "url": "https://beej.us/guide/bgnet/"
+      },
+      {
+       "kind": "docs",
+       "title": "epoll(7) man page",
+       "url": "https://man7.org/linux/man-pages/man7/epoll.7.html"
+      },
+      {
+       "kind": "docs",
+       "title": "io_uring(7) man page",
+       "url": "https://man7.org/linux/man-pages/man7/io_uring.7.html"
+      },
+      {
+       "kind": "read",
+       "title": "Lord of the io_uring",
+       "url": "https://unixism.net/loti/"
+      },
+      {
+       "kind": "read",
+       "title": "The C10K problem",
+       "url": "http://www.kegel.com/c10k.html"
+      },
+      {
+       "kind": "read",
+       "title": "Build Your Own Redis (free online)",
+       "url": "https://build-your-own.org/redis/"
+      },
+      {
+       "kind": "lab",
+       "title": "CodeCrafters: build your own X (free tier)",
+       "url": "https://codecrafters.io/catalog"
+      }
+     ]
     },
     {
      "title": "Computer architecture: caches, linking, x86-64 assembly",
@@ -1026,7 +1725,44 @@
       "Reading assembly"
      ],
      "lab": "Do the CS:APP bomb lab.",
-     "check": "Why can iterating a matrix by rows be much faster than by columns?"
+     "check": "Why can iterating a matrix by rows be much faster than by columns?",
+     "resources": [
+      {
+       "kind": "lab",
+       "title": "CS:APP labs (bomb, attack, cache)",
+       "url": "http://csapp.cs.cmu.edu/3e/labs.html"
+      },
+      {
+       "kind": "read",
+       "title": "Latency Numbers Every Programmer Should Know",
+       "url": "https://colin-scott.github.io/personal_website/research/interactive_latency.html"
+      },
+      {
+       "kind": "read",
+       "title": "Ulrich Drepper: What Every Programmer Should Know About Memory",
+       "url": "https://people.freebsd.org/~lstewart/articles/cpumemory.pdf"
+      },
+      {
+       "kind": "read",
+       "title": "Agner Fog: Optimization manuals",
+       "url": "https://www.agner.org/optimize/"
+      },
+      {
+       "kind": "lab",
+       "title": "Compiler Explorer",
+       "url": "https://godbolt.org/"
+      },
+      {
+       "kind": "read",
+       "title": "Ian Lance Taylor: Linkers series",
+       "url": "https://lwn.net/Articles/276782/"
+      },
+      {
+       "kind": "lab",
+       "title": "Nand2Tetris",
+       "url": "https://www.nand2tetris.org/"
+      }
+     ]
     },
     {
      "title": "Go: interfaces, goroutines, context, testing, pprof",
@@ -1077,7 +1813,49 @@
       "Testing and pprof"
      ],
      "lab": "Write a concurrent worker pool, then find its bottleneck with pprof.",
-     "check": "How do goroutines leak, and how would you detect it?"
+     "check": "How do goroutines leak, and how would you detect it?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "A Tour of Go",
+       "url": "https://go.dev/tour/"
+      },
+      {
+       "kind": "docs",
+       "title": "Effective Go",
+       "url": "https://go.dev/doc/effective_go"
+      },
+      {
+       "kind": "read",
+       "title": "Go Concurrency Patterns: Context",
+       "url": "https://go.dev/blog/context"
+      },
+      {
+       "kind": "docs",
+       "title": "Profiling Go Programs",
+       "url": "https://go.dev/blog/pprof"
+      },
+      {
+       "kind": "read",
+       "title": "Learn Go with Tests",
+       "url": "https://quii.gitbook.io/learn-go-with-tests"
+      },
+      {
+       "kind": "docs",
+       "title": "Go Data Race Detector",
+       "url": "https://go.dev/doc/articles/race_detector"
+      },
+      {
+       "kind": "lab",
+       "title": "Exercism: Go track",
+       "url": "https://exercism.org/tracks/go"
+      },
+      {
+       "kind": "read",
+       "title": "Go by Example",
+       "url": "https://gobyexample.com/"
+      }
+     ]
     },
     {
      "title": "Go for infra: client-go, cobra, gRPC, Terraform providers",
@@ -1119,7 +1897,39 @@
       "The Terraform plugin framework"
      ],
      "lab": "Write a cobra CLI that lists Pods using client-go, and release it with goreleaser.",
-     "check": "Why use an informer rather than polling the API server?"
+     "check": "Why use an informer rather than polling the API server?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "client-go repository",
+       "url": "https://github.com/kubernetes/client-go"
+      },
+      {
+       "kind": "docs",
+       "title": "Cobra user guide",
+       "url": "https://cobra.dev/"
+      },
+      {
+       "kind": "docs",
+       "title": "gRPC Go quick start",
+       "url": "https://grpc.io/docs/languages/go/quickstart/"
+      },
+      {
+       "kind": "docs",
+       "title": "Terraform Plugin Framework",
+       "url": "https://developer.hashicorp.com/terraform/plugin/framework"
+      },
+      {
+       "kind": "lab",
+       "title": "Tutorial: build a custom Terraform provider",
+       "url": "https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework"
+      },
+      {
+       "kind": "docs",
+       "title": "The Kubebuilder Book",
+       "url": "https://book.kubebuilder.io/"
+      }
+     ]
     },
     {
      "title": "Python: typing, asyncio, packaging, pytest",
@@ -1152,7 +1962,44 @@
       "pytest fixtures"
      ],
      "lab": "Turn one of your scripts into a typed, tested, installable package.",
-     "check": "What happens if you call blocking code inside an asyncio coroutine?"
+     "check": "What happens if you call blocking code inside an asyncio coroutine?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Python typing documentation",
+       "url": "https://typing.python.org/en/latest/"
+      },
+      {
+       "kind": "docs",
+       "title": "asyncio documentation",
+       "url": "https://docs.python.org/3/library/asyncio.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Python Packaging User Guide",
+       "url": "https://packaging.python.org/en/latest/"
+      },
+      {
+       "kind": "docs",
+       "title": "pytest documentation",
+       "url": "https://docs.pytest.org/en/stable/"
+      },
+      {
+       "kind": "docs",
+       "title": "mypy documentation",
+       "url": "https://mypy.readthedocs.io/en/stable/"
+      },
+      {
+       "kind": "docs",
+       "title": "uv documentation",
+       "url": "https://docs.astral.sh/uv/"
+      },
+      {
+       "kind": "lab",
+       "title": "Exercism: Python track",
+       "url": "https://exercism.org/tracks/python"
+      }
+     ]
     },
     {
      "title": "Bash: strict mode, traps, shellcheck-clean scripts",
@@ -1185,7 +2032,44 @@
       "When not to use Bash"
      ],
      "lab": "Make an existing script clean under ShellCheck, with a cleanup trap.",
-     "check": "What does set -e fail to catch?"
+     "check": "What does set -e fail to catch?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Greg's Wiki: BashGuide",
+       "url": "https://mywiki.wooledge.org/BashGuide"
+      },
+      {
+       "kind": "read",
+       "title": "Greg's Wiki: Bash Pitfalls",
+       "url": "https://mywiki.wooledge.org/BashPitfalls"
+      },
+      {
+       "kind": "docs",
+       "title": "GNU Bash manual",
+       "url": "https://www.gnu.org/software/bash/manual/bash.html"
+      },
+      {
+       "kind": "lab",
+       "title": "ShellCheck",
+       "url": "https://www.shellcheck.net/"
+      },
+      {
+       "kind": "docs",
+       "title": "Google Shell Style Guide",
+       "url": "https://google.github.io/styleguide/shellguide.html"
+      },
+      {
+       "kind": "lab",
+       "title": "Exercism: Bash track",
+       "url": "https://exercism.org/tracks/bash"
+      },
+      {
+       "kind": "docs",
+       "title": "Bats: testing Bash",
+       "url": "https://bats-core.readthedocs.io/en/stable/"
+      }
+     ]
     },
     {
      "title": "Lua: embedding, OpenResty and Nginx scripting",
@@ -1218,7 +2102,39 @@
       "Redis and HAProxy scripting"
      ],
      "lab": "Write a rate limiter as an OpenResty Lua module.",
-     "check": "Why must you avoid blocking I/O inside an OpenResty handler?"
+     "check": "Why must you avoid blocking I/O inside an OpenResty handler?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Programming in Lua, 1st ed. (free)",
+       "url": "https://www.lua.org/pil/contents.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Lua 5.4 Reference Manual",
+       "url": "https://www.lua.org/manual/5.4/"
+      },
+      {
+       "kind": "docs",
+       "title": "OpenResty: Getting started",
+       "url": "https://openresty.org/en/getting-started.html"
+      },
+      {
+       "kind": "docs",
+       "title": "lua-nginx-module reference",
+       "url": "https://github.com/openresty/lua-nginx-module"
+      },
+      {
+       "kind": "read",
+       "title": "Programming OpenResty (GitBook source)",
+       "url": "https://github.com/openresty/programming-openresty"
+      },
+      {
+       "kind": "lab",
+       "title": "Exercism: Lua track",
+       "url": "https://exercism.org/tracks/lua"
+      }
+     ]
     },
     {
      "title": "Algorithms and data structures",
@@ -1231,6 +2147,24 @@
        "by": "MIT OpenCourseWare",
        "thumb": "https://i.ytimg.com/vi/ZA-tUyM_y7s/hqdefault.jpg",
        "count": 32
+      },
+      {
+       "id": "PLDV1Zeh2NRsB6SWUrDFW2RmDotAfPbeHu",
+       "kind": "playlist",
+       "title": "Data structures playlist",
+       "by": "WilliamFiset",
+       "thumb": "https://i.ytimg.com/vi/Qmt0QwzEmh0/hqdefault.jpg",
+       "note": "Data structures with clear animations.",
+       "count": 55
+      },
+      {
+       "id": "PLDN4rrl48XKpZkf03iYFl-O29szjTrs_O",
+       "kind": "playlist",
+       "title": "Algorithms",
+       "by": "Abdul Bari",
+       "thumb": "https://i.ytimg.com/vi/0IAPZzGSbME/hqdefault.jpg",
+       "note": "Algorithm analysis and classic techniques.",
+       "count": 84
       }
      ],
      "added": true,
@@ -1243,7 +2177,39 @@
       "Dynamic programming"
      ],
      "lab": "Implement an LRU cache and a consistent hash ring, with tests.",
-     "check": "What's the worst-case lookup in a hash table, and what causes it?"
+     "check": "What's the worst-case lookup in a hash table, and what causes it?",
+     "resources": [
+      {
+       "kind": "lab",
+       "title": "NeetCode roadmap (free tier)",
+       "url": "https://neetcode.io/roadmap"
+      },
+      {
+       "kind": "read",
+       "title": "Open Data Structures (free book)",
+       "url": "https://opendatastructures.org/"
+      },
+      {
+       "kind": "read",
+       "title": "Algorithms by Jeff Erickson (free book)",
+       "url": "https://jeffe.cs.illinois.edu/teaching/algorithms/"
+      },
+      {
+       "kind": "lab",
+       "title": "VisuAlgo",
+       "url": "https://visualgo.net/en"
+      },
+      {
+       "kind": "read",
+       "title": "CP-Algorithms",
+       "url": "https://cp-algorithms.com/"
+      },
+      {
+       "kind": "lab",
+       "title": "LeetCode problems (free tier)",
+       "url": "https://leetcode.com/problemset/"
+      }
+     ]
     }
    ],
    "why": "Principal engineers can read and change the code of the tools they depend on: a Kubernetes controller, an Nginx module, a Terraform provider. C teaches the memory model everything else hides, and Go is the language of cloud-native infrastructure. This track runs underneath every other phase.",
@@ -1424,7 +2390,39 @@
       "IAM Identity Center"
      ],
      "lab": "Build a small organization with Terraform and an SCP that denies unused regions.",
-     "check": "Can an SCP grant permissions? Does it affect the management account?"
+     "check": "Can an SCP grant permissions? Does it affect the management account?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "AWS Organizations User Guide",
+       "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_introduction.html"
+      },
+      {
+       "kind": "docs",
+       "title": "AWS Control Tower User Guide",
+       "url": "https://docs.aws.amazon.com/controltower/latest/userguide/what-is-control-tower.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Organizing Your AWS Environment Using Multiple Accounts",
+       "url": "https://docs.aws.amazon.com/whitepapers/latest/organizing-your-aws-environment/organizing-your-aws-environment.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Service control policies",
+       "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html"
+      },
+      {
+       "kind": "docs",
+       "title": "IAM Identity Center",
+       "url": "https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html"
+      },
+      {
+       "kind": "lab",
+       "title": "AWS Control Tower Workshop",
+       "url": "https://catalog.workshops.aws/control-tower/en-US"
+      }
+     ]
     },
     {
      "title": "IAM evaluation logic, permission boundaries, resource policies",
@@ -1457,7 +2455,39 @@
       "Cross-account access"
      ],
      "lab": "Set up a cross-account role, then trace why a request is denied using the policy simulator.",
-     "check": "Which wins when an identity policy allows an action and an SCP doesn't?"
+     "check": "Which wins when an identity policy allows an action and an SCP doesn't?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "IAM policy evaluation logic",
+       "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Permissions boundaries",
+       "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html"
+      },
+      {
+       "kind": "docs",
+       "title": "IAM Access Analyzer",
+       "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/what-is-access-analyzer.html"
+      },
+      {
+       "kind": "lab",
+       "title": "IAM Vulnerable",
+       "url": "https://github.com/BishopFox/iam-vulnerable"
+      },
+      {
+       "kind": "read",
+       "title": "AWS Security Blog: IAM posts",
+       "url": "https://aws.amazon.com/blogs/security/tag/iam/"
+      },
+      {
+       "kind": "docs",
+       "title": "Testing policies with the IAM simulator",
+       "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_testing-policies.html"
+      }
+     ]
     },
     {
      "title": "CI/CD on AWS, blue/green, canary, automated rollback",
@@ -1490,7 +2520,39 @@
       "Deployment alarms"
      ],
      "lab": "Build a canary deployment that rolls back automatically on an alarm.",
-     "check": "When would you choose canary over blue/green?"
+     "check": "When would you choose canary over blue/green?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "AWS CodePipeline User Guide",
+       "url": "https://docs.aws.amazon.com/codepipeline/latest/userguide/welcome.html"
+      },
+      {
+       "kind": "docs",
+       "title": "AWS CodeDeploy User Guide",
+       "url": "https://docs.aws.amazon.com/codedeploy/latest/userguide/welcome.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Blue/Green Deployments on AWS (whitepaper)",
+       "url": "https://docs.aws.amazon.com/whitepapers/latest/blue-green-deployments/welcome.html"
+      },
+      {
+       "kind": "read",
+       "title": "Amazon Builders' Library: Automating safe, hands-off deployments",
+       "url": "https://aws.amazon.com/builders-library/automating-safe-hands-off-deployments/"
+      },
+      {
+       "kind": "docs",
+       "title": "Argo Rollouts",
+       "url": "https://argoproj.github.io/argo-rollouts/"
+      },
+      {
+       "kind": "read",
+       "title": "DORA capabilities",
+       "url": "https://dora.dev/capabilities/"
+      }
+     ]
     },
     {
      "title": "Terraform at scale: modules, state, policy-as-code",
@@ -1523,7 +2585,44 @@
       "Policy-as-code and tests"
      ],
      "lab": "Write a reusable module with terraform test, and add a policy check to CI.",
-     "check": "How would you split a huge state file safely?"
+     "check": "How would you split a huge state file safely?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Terraform language docs",
+       "url": "https://developer.hashicorp.com/terraform/language"
+      },
+      {
+       "kind": "docs",
+       "title": "Module creation: recommended pattern",
+       "url": "https://developer.hashicorp.com/terraform/tutorials/modules/pattern-module-creation"
+      },
+      {
+       "kind": "docs",
+       "title": "OpenTofu documentation",
+       "url": "https://opentofu.org/docs/"
+      },
+      {
+       "kind": "docs",
+       "title": "Open Policy Agent docs",
+       "url": "https://www.openpolicyagent.org/docs/latest/"
+      },
+      {
+       "kind": "docs",
+       "title": "Terragrunt documentation",
+       "url": "https://terragrunt.gruntwork.io/docs/"
+      },
+      {
+       "kind": "lab",
+       "title": "HashiCorp Terraform tutorials",
+       "url": "https://developer.hashicorp.com/terraform/tutorials"
+      },
+      {
+       "kind": "docs",
+       "title": "Terratest",
+       "url": "https://terratest.gruntwork.io/"
+      }
+     ]
     },
     {
      "title": "Azure: Entra ID, management groups, VNets, AKS, Policy",
@@ -1565,7 +2664,44 @@
       "Azure Policy"
      ],
      "lab": "Deploy a hub-and-spoke VNet with Azure Policy guardrails using Terraform.",
-     "check": "How does Azure's RBAC scope hierarchy compare with AWS accounts?"
+     "check": "How does Azure's RBAC scope hierarchy compare with AWS accounts?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Microsoft Entra ID documentation",
+       "url": "https://learn.microsoft.com/en-us/entra/identity/"
+      },
+      {
+       "kind": "docs",
+       "title": "Azure management groups",
+       "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/overview"
+      },
+      {
+       "kind": "docs",
+       "title": "Azure Virtual Network",
+       "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+      },
+      {
+       "kind": "docs",
+       "title": "Azure Kubernetes Service",
+       "url": "https://learn.microsoft.com/en-us/azure/aks/"
+      },
+      {
+       "kind": "docs",
+       "title": "Azure Policy",
+       "url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+      },
+      {
+       "kind": "docs",
+       "title": "Azure landing zones",
+       "url": "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/landing-zone/"
+      },
+      {
+       "kind": "lab",
+       "title": "AZ-104 official labs",
+       "url": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/"
+      }
+     ]
     },
     {
      "title": "GCP: projects/folders, VPC-SC, GKE, IAM, Cloud Build",
@@ -1598,7 +2734,44 @@
       "GKE and Cloud Build"
      ],
      "lab": "Deploy a private GKE cluster, and map each piece to its AWS equivalent.",
-     "check": "What does a shared VPC give you that AWS needs other tools for?"
+     "check": "What does a shared VPC give you that AWS needs other tools for?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Resource hierarchy",
+       "url": "https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy"
+      },
+      {
+       "kind": "docs",
+       "title": "VPC Service Controls",
+       "url": "https://cloud.google.com/vpc-service-controls/docs/overview"
+      },
+      {
+       "kind": "docs",
+       "title": "GKE documentation",
+       "url": "https://cloud.google.com/kubernetes-engine/docs"
+      },
+      {
+       "kind": "docs",
+       "title": "IAM overview",
+       "url": "https://cloud.google.com/iam/docs/overview"
+      },
+      {
+       "kind": "docs",
+       "title": "Cloud Build documentation",
+       "url": "https://cloud.google.com/build/docs"
+      },
+      {
+       "kind": "read",
+       "title": "Google Cloud Architecture Framework",
+       "url": "https://cloud.google.com/architecture/framework"
+      },
+      {
+       "kind": "lab",
+       "title": "Google Skills: Google Cloud labs (free tier)",
+       "url": "https://www.cloudskillsboost.google/"
+      }
+     ]
     },
     {
      "title": "Well-Architected: reliability, cost, security, sustainability",
@@ -1611,6 +2784,15 @@
        "by": "freeCodeCamp.org",
        "thumb": "https://i.ytimg.com/vi/hyEw7dQ9-JE/hqdefault.jpg",
        "seconds": 254744
+      },
+      {
+       "id": "PLhr1KZpdzukdc8hT9hCF8hwfWkYAX-frO",
+       "kind": "playlist",
+       "title": "AWS Well-Architected for Startups",
+       "by": "Amazon Web Services",
+       "thumb": "https://i.ytimg.com/vi/GhTC-pMgOjc/hqdefault.jpg",
+       "note": "From AWS: the framework applied in practice.",
+       "count": 8
       }
      ],
      "id": "cloud-7",
@@ -1622,7 +2804,39 @@
       "Running a review"
      ],
      "lab": "Run a Well-Architected review on one of your own systems, and write up the top risks.",
-     "check": "Which trade-off would you accept between cost and reliability, and for what workload?"
+     "check": "Which trade-off would you accept between cost and reliability, and for what workload?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "AWS Well-Architected Framework",
+       "url": "https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Reliability Pillar",
+       "url": "https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/welcome.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Sustainability Pillar",
+       "url": "https://docs.aws.amazon.com/wellarchitected/latest/sustainability-pillar/sustainability-pillar.html"
+      },
+      {
+       "kind": "lab",
+       "title": "AWS Well-Architected Labs",
+       "url": "https://www.wellarchitectedlabs.com/"
+      },
+      {
+       "kind": "read",
+       "title": "Amazon Builders' Library",
+       "url": "https://aws.amazon.com/builders-library/"
+      },
+      {
+       "kind": "docs",
+       "title": "Azure Well-Architected Framework",
+       "url": "https://learn.microsoft.com/en-us/azure/well-architected/"
+      }
+     ]
     },
     {
      "title": "FinOps: tagging, commitments, unit economics",
@@ -1655,7 +2869,44 @@
       "Showback"
      ],
      "lab": "Analyse a real or lab bill with Infracost and Cost Explorer, then write the savings plan.",
-     "check": "What's a useful unit cost for your current service?"
+     "check": "What's a useful unit cost for your current service?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "FinOps Framework",
+       "url": "https://www.finops.org/framework/"
+      },
+      {
+       "kind": "read",
+       "title": "FinOps Introduction",
+       "url": "https://www.finops.org/introduction/what-is-finops/"
+      },
+      {
+       "kind": "docs",
+       "title": "AWS Cost Optimization Pillar",
+       "url": "https://docs.aws.amazon.com/wellarchitected/latest/cost-optimization-pillar/welcome.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Savings Plans",
+       "url": "https://docs.aws.amazon.com/savingsplans/latest/userguide/what-is-savings-plans.html"
+      },
+      {
+       "kind": "docs",
+       "title": "OpenCost documentation",
+       "url": "https://opencost.io/docs/"
+      },
+      {
+       "kind": "docs",
+       "title": "Infracost documentation",
+       "url": "https://www.infracost.io/docs/"
+      },
+      {
+       "kind": "docs",
+       "title": "FOCUS billing data specification",
+       "url": "https://focus.finops.org/"
+      }
+     ]
     }
    ],
    "why": "You hold AWS SAA, so build professional-level depth there first. Azure and GCP then teach you which patterns are universal and which are provider-specific. That comparative judgement is what principal-level multi-cloud work needs.",
@@ -1802,7 +3053,44 @@
       "Scheduler framework"
      ],
      "lab": "Do Kubernetes The Hard Way, and write down how each component authenticates.",
-     "check": "What happens, step by step, between kubectl apply and a running Pod?"
+     "check": "What happens, step by step, between kubectl apply and a running Pod?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Kubernetes: Cluster components",
+       "url": "https://kubernetes.io/docs/concepts/overview/components/"
+      },
+      {
+       "kind": "lab",
+       "title": "Kubernetes The Hard Way",
+       "url": "https://github.com/kelseyhightower/kubernetes-the-hard-way"
+      },
+      {
+       "kind": "docs",
+       "title": "etcd documentation",
+       "url": "https://etcd.io/docs/"
+      },
+      {
+       "kind": "docs",
+       "title": "Kube-scheduler",
+       "url": "https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/"
+      },
+      {
+       "kind": "read",
+       "title": "What happens when I type kubectl run?",
+       "url": "https://github.com/jamiehannaford/what-happens-when-k8s"
+      },
+      {
+       "kind": "docs",
+       "title": "API server: API concepts",
+       "url": "https://kubernetes.io/docs/reference/using-api/api-concepts/"
+      },
+      {
+       "kind": "lab",
+       "title": "Killercoda Kubernetes playground",
+       "url": "https://killercoda.com/kubernetes"
+      }
+     ]
     },
     {
      "title": "Reconciliation, CRDs, operators, admission webhooks",
@@ -1835,7 +3123,39 @@
       "Idempotency"
      ],
      "lab": "Do the Kubebuilder CronJob tutorial end to end.",
-     "check": "Why must a reconcile function be idempotent?"
+     "check": "Why must a reconcile function be idempotent?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "The Kubebuilder Book",
+       "url": "https://book.kubebuilder.io/"
+      },
+      {
+       "kind": "docs",
+       "title": "Custom Resources",
+       "url": "https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/"
+      },
+      {
+       "kind": "docs",
+       "title": "Operator pattern",
+       "url": "https://kubernetes.io/docs/concepts/extend-kubernetes/operator/"
+      },
+      {
+       "kind": "docs",
+       "title": "Dynamic Admission Control",
+       "url": "https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/"
+      },
+      {
+       "kind": "docs",
+       "title": "Operator SDK",
+       "url": "https://sdk.operatorframework.io/docs/"
+      },
+      {
+       "kind": "read",
+       "title": "Kubernetes API Conventions",
+       "url": "https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md"
+      }
+     ]
     },
     {
      "title": "CNI deep dive: Cilium/eBPF, network policy, Gateway API",
@@ -1868,7 +3188,39 @@
       "Gateway API"
      ],
      "lab": "Enforce default-deny with Cilium, and watch dropped flows in Hubble.",
-     "check": "How does Cilium replace kube-proxy?"
+     "check": "How does Cilium replace kube-proxy?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Cilium documentation",
+       "url": "https://docs.cilium.io/en/stable/"
+      },
+      {
+       "kind": "docs",
+       "title": "Kubernetes Network Policies",
+       "url": "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+      },
+      {
+       "kind": "docs",
+       "title": "Gateway API",
+       "url": "https://gateway-api.sigs.k8s.io/"
+      },
+      {
+       "kind": "lab",
+       "title": "Isovalent hands-on labs",
+       "url": "https://isovalent.com/resource-library/labs/"
+      },
+      {
+       "kind": "docs",
+       "title": "CNI specification",
+       "url": "https://www.cni.dev/docs/spec/"
+      },
+      {
+       "kind": "lab",
+       "title": "Network Policy Editor",
+       "url": "https://editor.networkpolicy.io/"
+      }
+     ]
     },
     {
      "title": "Storage: CSI, StatefulSets, databases on Kubernetes",
@@ -1901,7 +3253,39 @@
       "When to avoid databases on Kubernetes"
      ],
      "lab": "Run CloudNativePG, then kill a primary and time the failover.",
-     "check": "What guarantees does a StatefulSet add over a Deployment?"
+     "check": "What guarantees does a StatefulSet add over a Deployment?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Persistent Volumes",
+       "url": "https://kubernetes.io/docs/concepts/storage/persistent-volumes/"
+      },
+      {
+       "kind": "docs",
+       "title": "StatefulSets",
+       "url": "https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/"
+      },
+      {
+       "kind": "docs",
+       "title": "Kubernetes CSI Developer Documentation",
+       "url": "https://kubernetes-csi.github.io/docs/"
+      },
+      {
+       "kind": "docs",
+       "title": "CloudNativePG documentation",
+       "url": "https://cloudnative-pg.io/documentation/current/"
+      },
+      {
+       "kind": "docs",
+       "title": "Rook documentation",
+       "url": "https://rook.io/docs/rook/latest-release/Getting-Started/intro/"
+      },
+      {
+       "kind": "lab",
+       "title": "Run a replicated stateful application",
+       "url": "https://kubernetes.io/docs/tasks/run-application/run-replicated-stateful-application/"
+      }
+     ]
     },
     {
      "title": "Multi-tenancy, Cluster API, GitOps at scale",
@@ -1943,7 +3327,39 @@
       "Fleet management"
      ],
      "lab": "Build an Argo CD app-of-apps with per-tenant quotas.",
-     "check": "Where does namespace-based isolation stop being enough?"
+     "check": "Where does namespace-based isolation stop being enough?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Kubernetes: Multi-tenancy",
+       "url": "https://kubernetes.io/docs/concepts/security/multi-tenancy/"
+      },
+      {
+       "kind": "docs",
+       "title": "Cluster API Book",
+       "url": "https://cluster-api.sigs.k8s.io/"
+      },
+      {
+       "kind": "docs",
+       "title": "Argo CD documentation",
+       "url": "https://argo-cd.readthedocs.io/en/stable/"
+      },
+      {
+       "kind": "docs",
+       "title": "Flux documentation",
+       "url": "https://fluxcd.io/flux/"
+      },
+      {
+       "kind": "docs",
+       "title": "vCluster documentation",
+       "url": "https://www.vcluster.com/docs"
+      },
+      {
+       "kind": "docs",
+       "title": "Argo CD ApplicationSet",
+       "url": "https://argo-cd.readthedocs.io/en/stable/user-guide/application-set/"
+      }
+     ]
     },
     {
      "title": "Autoscaling: HPA, VPA, KEDA, Karpenter",
@@ -1976,7 +3392,39 @@
       "Bin packing and disruption"
      ],
      "lab": "Scale a queue worker with KEDA, and watch Karpenter add nodes.",
-     "check": "Why can HPA and VPA conflict on the same metric?"
+     "check": "Why can HPA and VPA conflict on the same metric?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Horizontal Pod Autoscaling",
+       "url": "https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/"
+      },
+      {
+       "kind": "docs",
+       "title": "Vertical Pod Autoscaler",
+       "url": "https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler"
+      },
+      {
+       "kind": "docs",
+       "title": "KEDA documentation",
+       "url": "https://keda.sh/docs/latest/"
+      },
+      {
+       "kind": "docs",
+       "title": "Karpenter documentation",
+       "url": "https://karpenter.sh/docs/"
+      },
+      {
+       "kind": "lab",
+       "title": "HPA walkthrough",
+       "url": "https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/"
+      },
+      {
+       "kind": "read",
+       "title": "EKS Best Practices: Karpenter",
+       "url": "https://docs.aws.amazon.com/eks/latest/best-practices/karpenter.html"
+      }
+     ]
     },
     {
      "title": "Cluster security: RBAC, PSS, supply chain, runtime",
@@ -2018,7 +3466,49 @@
       "Runtime detection"
      ],
      "lab": "Write Falco rules, and enforce cosign signatures at admission.",
-     "check": "What can a Pod with the host PID namespace do?"
+     "check": "What can a Pod with the host PID namespace do?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Kubernetes RBAC",
+       "url": "https://kubernetes.io/docs/reference/access-authn-authz/rbac/"
+      },
+      {
+       "kind": "docs",
+       "title": "Pod Security Standards",
+       "url": "https://kubernetes.io/docs/concepts/security/pod-security-standards/"
+      },
+      {
+       "kind": "docs",
+       "title": "Falco documentation",
+       "url": "https://falco.org/docs/"
+      },
+      {
+       "kind": "docs",
+       "title": "Kyverno documentation",
+       "url": "https://kyverno.io/docs/"
+      },
+      {
+       "kind": "lab",
+       "title": "Kubernetes Goat",
+       "url": "https://madhuakula.com/kubernetes-goat/"
+      },
+      {
+       "kind": "read",
+       "title": "CISA: Kubernetes Hardening Guide",
+       "url": "https://www.cisa.gov/news-events/alerts/2022/03/15/updated-kubernetes-hardening-guide"
+      },
+      {
+       "kind": "lab",
+       "title": "Killer.sh simulator (included with the CKS exam)",
+       "url": "https://killer.sh/"
+      },
+      {
+       "kind": "docs",
+       "title": "Kubernetes security checklist",
+       "url": "https://kubernetes.io/docs/concepts/security/security-checklist/"
+      }
+     ]
     },
     {
      "title": "Platform engineering: IDPs and golden paths",
@@ -2051,7 +3541,39 @@
       "Measuring adoption"
      ],
      "lab": "Build one golden-path template that takes a service from repo to production.",
-     "check": "How would you tell if your platform is actually being adopted?"
+     "check": "How would you tell if your platform is actually being adopted?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "CNCF Platforms White Paper",
+       "url": "https://tag-app-delivery.cncf.io/whitepapers/platforms/"
+      },
+      {
+       "kind": "read",
+       "title": "Platform Engineering Maturity Model",
+       "url": "https://tag-app-delivery.cncf.io/whitepapers/platform-eng-maturity-model/"
+      },
+      {
+       "kind": "docs",
+       "title": "Backstage documentation",
+       "url": "https://backstage.io/docs/overview/what-is-backstage"
+      },
+      {
+       "kind": "docs",
+       "title": "Crossplane documentation",
+       "url": "https://docs.crossplane.io/latest/"
+      },
+      {
+       "kind": "read",
+       "title": "Team Topologies key concepts",
+       "url": "https://teamtopologies.com/key-concepts"
+      },
+      {
+       "kind": "read",
+       "title": "Golden paths at Spotify",
+       "url": "https://engineering.atspotify.com/2020/08/how-we-use-golden-paths-to-solve-fragmentation-in-our-software-ecosystem/"
+      }
+     ]
     },
     {
      "title": "AI infrastructure: GPUs, LLM serving, inference on Kubernetes",
@@ -2094,7 +3616,44 @@
       "Inference autoscaling and cost"
      ],
      "lab": "Serve a small open model with vLLM on Kubernetes, then load-test latency and throughput.",
-     "check": "Why is CPU utilisation a poor autoscaling signal for LLM inference?"
+     "check": "Why is CPU utilisation a poor autoscaling signal for LLM inference?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Kubernetes: Schedule GPUs",
+       "url": "https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/"
+      },
+      {
+       "kind": "docs",
+       "title": "NVIDIA GPU Operator",
+       "url": "https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/index.html"
+      },
+      {
+       "kind": "docs",
+       "title": "vLLM documentation",
+       "url": "https://docs.vllm.ai/"
+      },
+      {
+       "kind": "docs",
+       "title": "KServe documentation",
+       "url": "https://kserve.github.io/website/"
+      },
+      {
+       "kind": "docs",
+       "title": "Kueue documentation",
+       "url": "https://kueue.sigs.k8s.io/docs/"
+      },
+      {
+       "kind": "docs",
+       "title": "Gateway API Inference Extension",
+       "url": "https://gateway-api-inference-extension.sigs.k8s.io/"
+      },
+      {
+       "kind": "docs",
+       "title": "Ray on Kubernetes",
+       "url": "https://docs.ray.io/en/latest/cluster/kubernetes/index.html"
+      }
+     ]
     }
    ],
    "why": "With CKA done, the next step is how Kubernetes works inside: the controller pattern, the scheduler, etcd and the networking dataplane. At principal level you design the platform other teams build on, write operators and secure multi-tenant clusters.",
@@ -2254,7 +3813,39 @@
       "Tracking mitigations"
      ],
      "lab": "Threat-model one of your own systems, and turn the output into tickets.",
-     "check": "What are the four questions of threat modelling?"
+     "check": "What are the four questions of threat modelling?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "OWASP Threat Modeling Cheat Sheet",
+       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html"
+      },
+      {
+       "kind": "read",
+       "title": "Threat Modeling Manifesto",
+       "url": "https://www.threatmodelingmanifesto.org/"
+      },
+      {
+       "kind": "docs",
+       "title": "OWASP Threat Dragon",
+       "url": "https://owasp.org/www-project-threat-dragon/"
+      },
+      {
+       "kind": "read",
+       "title": "Microsoft: STRIDE threats",
+       "url": "https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool-threats"
+      },
+      {
+       "kind": "lab",
+       "title": "Elevation of Privilege card game",
+       "url": "https://shostack.org/games/elevation-of-privilege"
+      },
+      {
+       "kind": "read",
+       "title": "Shostack: The Four Question Framework",
+       "url": "https://shostack.org/resources/threat-modeling"
+      }
+     ]
     },
     {
      "title": "Cloud security architecture: identity, preventive vs detective",
@@ -2287,7 +3878,39 @@
       "Secure landing zones"
      ],
      "lab": "Map your landing zone's controls to preventive and detective, then find the gaps.",
-     "check": "Which control would catch a stolen but valid credential?"
+     "check": "Which control would catch a stolen but valid credential?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "AWS Security Reference Architecture",
+       "url": "https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/welcome.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Security Pillar",
+       "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/welcome.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Microsoft Cybersecurity Reference Architectures",
+       "url": "https://learn.microsoft.com/en-us/security/adoption/mcra"
+      },
+      {
+       "kind": "read",
+       "title": "NIST SP 800-207: Zero Trust Architecture",
+       "url": "https://csrc.nist.gov/pubs/sp/800/207/final"
+      },
+      {
+       "kind": "read",
+       "title": "Google BeyondCorp",
+       "url": "https://cloud.google.com/beyondcorp"
+      },
+      {
+       "kind": "read",
+       "title": "CSA Cloud Controls Matrix",
+       "url": "https://cloudsecurityalliance.org/research/cloud-controls-matrix"
+      }
+     ]
     },
     {
      "title": "AWS security: GuardDuty, Security Hub, Macie, Access Analyzer, KMS",
@@ -2329,7 +3952,44 @@
       "KMS key policies"
      ],
      "lab": "Generate GuardDuty sample findings, and route them to automated remediation.",
-     "check": "Why does a KMS key policy matter even if IAM allows the action?"
+     "check": "Why does a KMS key policy matter even if IAM allows the action?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Amazon GuardDuty",
+       "url": "https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html"
+      },
+      {
+       "kind": "docs",
+       "title": "AWS Security Hub",
+       "url": "https://docs.aws.amazon.com/securityhub/latest/userguide/what-is-securityhub.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Amazon Macie",
+       "url": "https://docs.aws.amazon.com/macie/latest/user/what-is-macie.html"
+      },
+      {
+       "kind": "docs",
+       "title": "AWS KMS concepts",
+       "url": "https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html"
+      },
+      {
+       "kind": "lab",
+       "title": "AWS Security Workshops",
+       "url": "https://workshops.aws/categories/Security"
+      },
+      {
+       "kind": "lab",
+       "title": "flaws.cloud",
+       "url": "http://flaws.cloud/"
+      },
+      {
+       "kind": "lab",
+       "title": "flaws2.cloud",
+       "url": "http://flaws2.cloud/"
+      }
+     ]
     },
     {
      "title": "Microsoft security: Defender for Cloud, Sentinel, Entra ID",
@@ -2371,7 +4031,39 @@
       "AI workload security"
      ],
      "lab": "Connect a lab subscription to Sentinel, and write one KQL detection.",
-     "check": "How does Entra Conditional Access change sign-in risk handling?"
+     "check": "How does Entra Conditional Access change sign-in risk handling?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Defender for Cloud",
+       "url": "https://learn.microsoft.com/en-us/azure/defender-for-cloud/"
+      },
+      {
+       "kind": "docs",
+       "title": "Microsoft Sentinel",
+       "url": "https://learn.microsoft.com/en-us/azure/sentinel/"
+      },
+      {
+       "kind": "docs",
+       "title": "Conditional Access",
+       "url": "https://learn.microsoft.com/en-us/entra/identity/conditional-access/overview"
+      },
+      {
+       "kind": "docs",
+       "title": "Microsoft Sentinel: onboard quickstart",
+       "url": "https://learn.microsoft.com/en-us/azure/sentinel/quickstart-onboard"
+      },
+      {
+       "kind": "lab",
+       "title": "KQL tutorial",
+       "url": "https://learn.microsoft.com/en-us/kusto/query/tutorials/learn-common-operators"
+      },
+      {
+       "kind": "lab",
+       "title": "Kusto Detective Agency",
+       "url": "https://detective.kusto.io/"
+      }
+     ]
     },
     {
      "title": "Detection engineering: MITRE ATT&CK, Sigma, log pipelines",
@@ -2404,7 +4096,44 @@
       "Tuning false positives"
      ],
      "lab": "Write Sigma rules for three ATT&CK techniques, and test them by simulating each.",
-     "check": "What makes a detection durable rather than tied to one tool?"
+     "check": "What makes a detection durable rather than tied to one tool?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "MITRE ATT&CK",
+       "url": "https://attack.mitre.org/"
+      },
+      {
+       "kind": "docs",
+       "title": "Sigma rules",
+       "url": "https://github.com/SigmaHQ/sigma"
+      },
+      {
+       "kind": "read",
+       "title": "Palantir: Alerting and Detection Strategy Framework",
+       "url": "https://blog.palantir.com/alerting-and-detection-strategy-framework-52dc33722df2"
+      },
+      {
+       "kind": "lab",
+       "title": "Atomic Red Team",
+       "url": "https://github.com/redcanaryco/atomic-red-team"
+      },
+      {
+       "kind": "docs",
+       "title": "Falco rules",
+       "url": "https://falco.org/docs/concepts/rules/"
+      },
+      {
+       "kind": "read",
+       "title": "Detection Engineering Weekly",
+       "url": "https://www.detectionengineering.net/"
+      },
+      {
+       "kind": "lab",
+       "title": "Splunk Boss of the SOC data",
+       "url": "https://github.com/splunk/botsv3"
+      }
+     ]
     },
     {
      "title": "Supply chain: SLSA, Sigstore, SBOMs, provenance",
@@ -2446,7 +4175,44 @@
       "Provenance verification"
      ],
      "lab": "Add signed provenance to a GitHub Actions build, and verify it at admission.",
-     "check": "What does a signature prove, and what doesn't it prove?"
+     "check": "What does a signature prove, and what doesn't it prove?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "SLSA specification",
+       "url": "https://slsa.dev/spec/"
+      },
+      {
+       "kind": "docs",
+       "title": "Sigstore documentation",
+       "url": "https://docs.sigstore.dev/"
+      },
+      {
+       "kind": "docs",
+       "title": "CycloneDX specification",
+       "url": "https://cyclonedx.org/specification/overview/"
+      },
+      {
+       "kind": "docs",
+       "title": "SPDX",
+       "url": "https://spdx.dev/"
+      },
+      {
+       "kind": "docs",
+       "title": "Syft",
+       "url": "https://github.com/anchore/syft"
+      },
+      {
+       "kind": "docs",
+       "title": "in-toto",
+       "url": "https://in-toto.io/"
+      },
+      {
+       "kind": "lab",
+       "title": "GitHub artifact attestations",
+       "url": "https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds"
+      }
+     ]
     },
     {
      "title": "Offensive basics: recon, privesc, AD attacks, cloud pentesting",
@@ -2488,7 +4254,49 @@
       "Cloud pentesting"
      ],
      "lab": "Solve flaws.cloud and flaws2.cloud, and write the fix for every level. Only attack systems you're authorised to test.",
-     "check": "Why does Kerberoasting work, and what stops it?"
+     "check": "Why does Kerberoasting work, and what stops it?",
+     "resources": [
+      {
+       "kind": "lab",
+       "title": "TryHackMe (free tier)",
+       "url": "https://tryhackme.com/"
+      },
+      {
+       "kind": "lab",
+       "title": "PortSwigger Web Security Academy",
+       "url": "https://portswigger.net/web-security"
+      },
+      {
+       "kind": "read",
+       "title": "HackTricks",
+       "url": "https://book.hacktricks.wiki/"
+      },
+      {
+       "kind": "lab",
+       "title": "CloudGoat",
+       "url": "https://github.com/RhinoSecurityLabs/cloudgoat"
+      },
+      {
+       "kind": "read",
+       "title": "GTFOBins",
+       "url": "https://gtfobins.github.io/"
+      },
+      {
+       "kind": "lab",
+       "title": "OverTheWire wargames",
+       "url": "https://overthewire.org/wargames/"
+      },
+      {
+       "kind": "lab",
+       "title": "GOAD: Game of Active Directory",
+       "url": "https://github.com/Orange-Cyberdefense/GOAD"
+      },
+      {
+       "kind": "docs",
+       "title": "OWASP Top Ten",
+       "url": "https://owasp.org/www-project-top-ten/"
+      }
+     ]
     },
     {
      "title": "Incident response: forensics, containment, postmortems",
@@ -2521,7 +4329,44 @@
       "Postmortems"
      ],
      "lab": "Write a runbook for a leaked cloud key, and have someone else follow it.",
-     "check": "What should you preserve before you contain a compromised host?"
+     "check": "What should you preserve before you contain a compromised host?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "NIST SP 800-61: Incident Response",
+       "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
+      },
+      {
+       "kind": "docs",
+       "title": "AWS Security Incident Response Guide",
+       "url": "https://docs.aws.amazon.com/whitepapers/latest/aws-security-incident-response-guide/aws-security-incident-response-guide.html"
+      },
+      {
+       "kind": "read",
+       "title": "Google SRE Book: Managing Incidents",
+       "url": "https://sre.google/sre-book/managing-incidents/"
+      },
+      {
+       "kind": "read",
+       "title": "Google SRE Book: Postmortem Culture",
+       "url": "https://sre.google/sre-book/postmortem-culture/"
+      },
+      {
+       "kind": "lab",
+       "title": "Blue Team Labs Online (free tier)",
+       "url": "https://blueteamlabs.online/"
+      },
+      {
+       "kind": "lab",
+       "title": "CyberDefenders (free tier)",
+       "url": "https://cyberdefenders.org/"
+      },
+      {
+       "kind": "docs",
+       "title": "Velociraptor documentation",
+       "url": "https://docs.velociraptor.app/"
+      }
+     ]
     }
    ],
    "habit": true,
@@ -2668,7 +4513,44 @@
       "Indexing"
      ],
      "lab": "Do the CMU BusTub buffer pool project.",
-     "check": "When does an LSM tree beat a B-tree, and what does it cost?"
+     "check": "When does an LSM tree beat a B-tree, and what does it cost?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "PostgreSQL: Concurrency Control (MVCC)",
+       "url": "https://www.postgresql.org/docs/current/mvcc.html"
+      },
+      {
+       "kind": "docs",
+       "title": "PostgreSQL: Write-Ahead Logging",
+       "url": "https://www.postgresql.org/docs/current/wal-intro.html"
+      },
+      {
+       "kind": "read",
+       "title": "Use The Index, Luke",
+       "url": "https://use-the-index-luke.com/"
+      },
+      {
+       "kind": "read",
+       "title": "The Internals of PostgreSQL",
+       "url": "https://www.interdb.jp/pg/"
+      },
+      {
+       "kind": "docs",
+       "title": "RocksDB wiki",
+       "url": "https://github.com/facebook/rocksdb/wiki"
+      },
+      {
+       "kind": "read",
+       "title": "Build Your Own Database (free online)",
+       "url": "https://build-your-own.org/database/"
+      },
+      {
+       "kind": "lab",
+       "title": "CMU BusTub project",
+       "url": "https://15445.courses.cs.cmu.edu/"
+      }
+     ]
     },
     {
      "title": "PostgreSQL: planner, replication, partitioning, Patroni, PITR",
@@ -2710,7 +4592,49 @@
       "Patroni and PITR"
      ],
      "lab": "Build Patroni HA, restore to a point in time, and read the EXPLAIN ANALYZE of a slow query.",
-     "check": "Why does a long-running transaction cause table bloat?"
+     "check": "Why does a long-running transaction cause table bloat?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "PostgreSQL documentation",
+       "url": "https://www.postgresql.org/docs/current/"
+      },
+      {
+       "kind": "docs",
+       "title": "Using EXPLAIN",
+       "url": "https://www.postgresql.org/docs/current/using-explain.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Table Partitioning",
+       "url": "https://www.postgresql.org/docs/current/ddl-partitioning.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Patroni documentation",
+       "url": "https://patroni.readthedocs.io/en/latest/"
+      },
+      {
+       "kind": "docs",
+       "title": "Continuous Archiving and PITR",
+       "url": "https://www.postgresql.org/docs/current/continuous-archiving.html"
+      },
+      {
+       "kind": "docs",
+       "title": "pgBackRest user guide",
+       "url": "https://pgbackrest.org/user-guide.html"
+      },
+      {
+       "kind": "read",
+       "title": "PostgreSQL Wiki: Don't Do This",
+       "url": "https://wiki.postgresql.org/wiki/Don%27t_Do_This"
+      },
+      {
+       "kind": "lab",
+       "title": "pgexercises",
+       "url": "https://pgexercises.com/"
+      }
+     ]
     },
     {
      "title": "Distributed systems: replication, Raft, clocks, CAP/PACELC",
@@ -2752,7 +4676,49 @@
       "CAP and PACELC"
      ],
      "lab": "Do the MIT 6.5840 Raft lab in Go, until the tests pass repeatedly.",
-     "check": "Why does Raft need a majority, and what breaks with an even split?"
+     "check": "Why does Raft need a majority, and what breaks with an even split?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "The Raft site and visualisation",
+       "url": "https://raft.github.io/"
+      },
+      {
+       "kind": "read",
+       "title": "Raft paper",
+       "url": "https://raft.github.io/raft.pdf"
+      },
+      {
+       "kind": "lab",
+       "title": "MIT 6.5840 labs",
+       "url": "https://pdos.csail.mit.edu/6.824/"
+      },
+      {
+       "kind": "lab",
+       "title": "Fly.io Gossip Glomers",
+       "url": "https://fly.io/dist-sys/"
+      },
+      {
+       "kind": "read",
+       "title": "Jepsen analyses",
+       "url": "https://jepsen.io/analyses"
+      },
+      {
+       "kind": "read",
+       "title": "Jepsen: Consistency models",
+       "url": "https://jepsen.io/consistency"
+      },
+      {
+       "kind": "read",
+       "title": "Distributed systems for fun and profit",
+       "url": "https://book.mixu.net/distsys/"
+      },
+      {
+       "kind": "read",
+       "title": "Time, Clocks, and the Ordering of Events",
+       "url": "https://lamport.azurewebsites.net/pubs/time-clocks.pdf"
+      }
+     ]
     },
     {
      "title": "Caches and queues: Redis, Kafka semantics, backpressure",
@@ -2785,7 +4751,34 @@
       "Backpressure"
      ],
      "lab": "Build a Kafka consumer that survives restarts without losing or duplicating work.",
-     "check": "What does Kafka's exactly-once really guarantee, and across what boundary?"
+     "check": "What does Kafka's exactly-once really guarantee, and across what boundary?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Redis documentation",
+       "url": "https://redis.io/docs/latest/"
+      },
+      {
+       "kind": "docs",
+       "title": "Apache Kafka documentation",
+       "url": "https://kafka.apache.org/documentation/"
+      },
+      {
+       "kind": "read",
+       "title": "Amazon Builders' Library: Avoiding insurmountable queue backlogs",
+       "url": "https://aws.amazon.com/builders-library/avoiding-insurmountable-queue-backlogs/"
+      },
+      {
+       "kind": "read",
+       "title": "Amazon Builders' Library: Caching challenges and strategies",
+       "url": "https://aws.amazon.com/builders-library/caching-challenges-and-strategies/"
+      },
+      {
+       "kind": "read",
+       "title": "Queues Don't Fix Overload",
+       "url": "https://ferd.ca/queues-don-t-fix-overload.html"
+      }
+     ]
     },
     {
      "title": "System design: estimation, trade-offs, failure modes",
@@ -2818,7 +4811,44 @@
       "Design docs"
      ],
      "lab": "Write a design doc for a rate limiter, with a trade-off table.",
-     "check": "How many servers would you need for 10k requests a second, and how did you estimate it?"
+     "check": "How many servers would you need for 10k requests a second, and how did you estimate it?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "System Design Primer",
+       "url": "https://github.com/donnemartin/system-design-primer"
+      },
+      {
+       "kind": "read",
+       "title": "Latency Numbers (interactive)",
+       "url": "https://colin-scott.github.io/personal_website/research/interactive_latency.html"
+      },
+      {
+       "kind": "read",
+       "title": "High Scalability",
+       "url": "https://highscalability.com/"
+      },
+      {
+       "kind": "read",
+       "title": "MIT 6.5840 schedule and papers",
+       "url": "https://pdos.csail.mit.edu/6.824/schedule.html"
+      },
+      {
+       "kind": "read",
+       "title": "Dynamo paper",
+       "url": "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"
+      },
+      {
+       "kind": "read",
+       "title": "Google Spanner paper",
+       "url": "https://research.google/pubs/spanner-googles-globally-distributed-database-2/"
+      },
+      {
+       "kind": "read",
+       "title": "ByteByteGo blog",
+       "url": "https://blog.bytebytego.com/"
+      }
+     ]
     },
     {
      "title": "SRE: SLIs, SLOs, error budgets, burn-rate alerts",
@@ -2861,7 +4891,44 @@
       "Toil reduction"
      ],
      "lab": "Define an SLO for a real service, and build multi-window burn-rate alerts in Prometheus.",
-     "check": "Why alert on burn rate rather than on the raw error rate?"
+     "check": "Why alert on burn rate rather than on the raw error rate?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Google SRE Book",
+       "url": "https://sre.google/sre-book/table-of-contents/"
+      },
+      {
+       "kind": "read",
+       "title": "Google SRE Workbook",
+       "url": "https://sre.google/workbook/table-of-contents/"
+      },
+      {
+       "kind": "read",
+       "title": "SRE Workbook: Implementing SLOs",
+       "url": "https://sre.google/workbook/implementing-slos/"
+      },
+      {
+       "kind": "read",
+       "title": "SRE Workbook: Alerting on SLOs",
+       "url": "https://sre.google/workbook/alerting-on-slos/"
+      },
+      {
+       "kind": "docs",
+       "title": "Sloth: SLO generator",
+       "url": "https://sloth.dev/"
+      },
+      {
+       "kind": "lab",
+       "title": "The Art of SLOs workshop",
+       "url": "https://sre.google/resources/practices-and-processes/art-of-slos/"
+      },
+      {
+       "kind": "read",
+       "title": "My Philosophy on Alerting (Rob Ewaschuk)",
+       "url": "https://docs.google.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/preview"
+      }
+     ]
     },
     {
      "title": "Observability: Prometheus, logs, OpenTelemetry, profiling",
@@ -2903,7 +4970,44 @@
       "Continuous profiling"
      ],
      "lab": "Instrument a service with OpenTelemetry, and go from a metric spike to its trace.",
-     "check": "What's the cardinality trap in metrics, and how do you avoid it?"
+     "check": "What's the cardinality trap in metrics, and how do you avoid it?",
+     "resources": [
+      {
+       "kind": "docs",
+       "title": "Prometheus documentation",
+       "url": "https://prometheus.io/docs/introduction/overview/"
+      },
+      {
+       "kind": "docs",
+       "title": "OpenTelemetry documentation",
+       "url": "https://opentelemetry.io/docs/"
+      },
+      {
+       "kind": "docs",
+       "title": "Grafana documentation",
+       "url": "https://grafana.com/docs/grafana/latest/"
+      },
+      {
+       "kind": "docs",
+       "title": "Grafana Loki",
+       "url": "https://grafana.com/docs/loki/latest/"
+      },
+      {
+       "kind": "docs",
+       "title": "Pyroscope profiling",
+       "url": "https://grafana.com/docs/pyroscope/latest/"
+      },
+      {
+       "kind": "lab",
+       "title": "PromLabs: PromQL training (some free)",
+       "url": "https://training.promlabs.com/"
+      },
+      {
+       "kind": "lab",
+       "title": "OpenTelemetry Demo",
+       "url": "https://opentelemetry.io/docs/demo/"
+      }
+     ]
     },
     {
      "title": "Resilience: chaos, load testing, capacity, DR",
@@ -2936,7 +5040,44 @@
       "DR, RTO and RPO"
      ],
      "lab": "Run a chaos game day on your platform with k6 load running, and publish the findings.",
-     "check": "What's the difference between RTO and RPO, and which one drives backup frequency?"
+     "check": "What's the difference between RTO and RPO, and which one drives backup frequency?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Principles of Chaos Engineering",
+       "url": "https://principlesofchaos.org/"
+      },
+      {
+       "kind": "docs",
+       "title": "Chaos Mesh documentation",
+       "url": "https://chaos-mesh.org/docs/"
+      },
+      {
+       "kind": "docs",
+       "title": "Grafana k6 documentation",
+       "url": "https://grafana.com/docs/k6/latest/"
+      },
+      {
+       "kind": "docs",
+       "title": "AWS Fault Injection Service",
+       "url": "https://docs.aws.amazon.com/fis/latest/userguide/what-is.html"
+      },
+      {
+       "kind": "docs",
+       "title": "Disaster Recovery of Workloads on AWS",
+       "url": "https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-workloads-on-aws.html"
+      },
+      {
+       "kind": "read",
+       "title": "Amazon Builders' Library: Timeouts, retries and backoff",
+       "url": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/"
+      },
+      {
+       "kind": "read",
+       "title": "SRE Book: Addressing Cascading Failures",
+       "url": "https://sre.google/sre-book/addressing-cascading-failures/"
+      }
+     ]
     }
    ],
    "why": "Most hard architecture decisions are data decisions: consistency vs availability, which database, how to migrate with zero downtime, how to meet an RPO. Add reliability engineering and you have the core of principal-level system design.",
@@ -3087,7 +5228,44 @@
       "Evolutionary design"
      ],
      "lab": "Compare two architectures for a real system, using a scored trade-off table.",
-     "check": "What would make you reverse your last big architecture decision?"
+     "check": "What would make you reverse your last big architecture decision?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Martin Fowler: Software Architecture Guide",
+       "url": "https://martinfowler.com/architecture/"
+      },
+      {
+       "kind": "read",
+       "title": "Azure Architecture Center",
+       "url": "https://learn.microsoft.com/en-us/azure/architecture/"
+      },
+      {
+       "kind": "read",
+       "title": "Fitness function-driven development",
+       "url": "https://www.thoughtworks.com/insights/articles/fitness-function-driven-development"
+      },
+      {
+       "kind": "read",
+       "title": "AOSA: The Architecture of Open Source Applications",
+       "url": "https://aosabook.org/en/"
+      },
+      {
+       "kind": "read",
+       "title": "Hyrum's Law",
+       "url": "https://www.hyrumslaw.com/"
+      },
+      {
+       "kind": "read",
+       "title": "Choose Boring Technology",
+       "url": "https://boringtechnology.club/"
+      },
+      {
+       "kind": "read",
+       "title": "C4 model",
+       "url": "https://c4model.com/"
+      }
+     ]
     },
     {
      "title": "Decision records: ADRs, RFCs, design docs",
@@ -3120,7 +5298,44 @@
       "Keeping decisions findable"
      ],
      "lab": "Write ADRs for your three most recent significant decisions.",
-     "check": "Could a new hire tell from your ADR why you rejected the alternatives?"
+     "check": "Could a new hire tell from your ADR why you rejected the alternatives?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Design Docs at Google",
+       "url": "https://www.industrialempathy.com/posts/design-docs-at-google/"
+      },
+      {
+       "kind": "read",
+       "title": "Architecture Decision Records",
+       "url": "https://adr.github.io/"
+      },
+      {
+       "kind": "read",
+       "title": "Michael Nygard: Documenting Architecture Decisions",
+       "url": "https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions"
+      },
+      {
+       "kind": "read",
+       "title": "Rust RFC process",
+       "url": "https://github.com/rust-lang/rfcs"
+      },
+      {
+       "kind": "read",
+       "title": "Kubernetes Enhancement Proposals",
+       "url": "https://github.com/kubernetes/enhancements/tree/master/keps"
+      },
+      {
+       "kind": "read",
+       "title": "Oxide: RFD process",
+       "url": "https://rfd.shared.oxide.computer/rfd/0001"
+      },
+      {
+       "kind": "read",
+       "title": "Pragmatic Engineer: RFCs and Design Docs",
+       "url": "https://newsletter.pragmaticengineer.com/p/rfcs-and-design-docs"
+      }
+     ]
     },
     {
      "title": "Technical strategy: roadmaps, build vs buy",
@@ -3145,7 +5360,34 @@
       "Multi-year roadmaps"
      ],
      "lab": "Write a one-page technical strategy for your team: diagnosis, guiding policy, actions.",
-     "check": "What are you deliberately choosing not to do?"
+     "check": "What are you deliberately choosing not to do?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "StaffEng: Writing engineering strategy",
+       "url": "https://staffeng.com/guides/engineering-strategy/"
+      },
+      {
+       "kind": "read",
+       "title": "Will Larson: Writing engineering strategy",
+       "url": "https://lethain.com/eng-strategies/"
+      },
+      {
+       "kind": "read",
+       "title": "Wardley Maps (free book)",
+       "url": "https://learnwardleymapping.com/book/"
+      },
+      {
+       "kind": "book",
+       "title": "Good Strategy Bad Strategy (Rumelt)",
+       "url": "https://www.goodreads.com/book/show/11721966-good-strategy-bad-strategy"
+      },
+      {
+       "kind": "read",
+       "title": "Spotify Rhythm: how we get aligned",
+       "url": "https://blog.crisp.se/2016/06/08/henrikkniberg/spotify-rhythm"
+      }
+     ]
     },
     {
      "title": "Influence without authority and disagreeing well",
@@ -3178,7 +5420,39 @@
       "Glue work and its visibility"
      ],
      "lab": "Map the stakeholders for a change you want, and talk to each one before proposing it.",
-     "check": "Who could quietly block your current proposal, and why?"
+     "check": "Who could quietly block your current proposal, and why?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "StaffEng: Staying aligned with authority",
+       "url": "https://staffeng.com/guides/staying-aligned-with-authority/"
+      },
+      {
+       "kind": "read",
+       "title": "StaffEng: Getting in the room",
+       "url": "https://staffeng.com/guides/getting-in-the-room/"
+      },
+      {
+       "kind": "read",
+       "title": "Being Glue (Tanya Reilly)",
+       "url": "https://www.noidea.dog/glue"
+      },
+      {
+       "kind": "read",
+       "title": "Rands: The Update, The Vent and The Disaster",
+       "url": "https://randsinrepose.com/archives/the-update-the-vent-and-the-disaster/"
+      },
+      {
+       "kind": "read",
+       "title": "Radical Candor",
+       "url": "https://www.radicalcandor.com/our-approach/"
+      },
+      {
+       "kind": "read",
+       "title": "Amazon: Disagree and commit (Leadership Principles)",
+       "url": "https://www.amazon.jobs/content/en/our-workplace/leadership-principles"
+      }
+     ]
     },
     {
      "title": "Mentoring, sponsorship, design reviews",
@@ -3212,7 +5486,39 @@
       "Growing other seniors"
      ],
      "lab": "Set written goals with one engineer, and review them monthly.",
-     "check": "What opportunity have you handed to someone else recently?"
+     "check": "What opportunity have you handed to someone else recently?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "StaffEng: Staff archetypes",
+       "url": "https://staffeng.com/guides/staff-archetypes/"
+      },
+      {
+       "kind": "read",
+       "title": "Lara Hogan: What does sponsorship look like?",
+       "url": "https://larahogan.me/blog/what-sponsorship-looks-like/"
+      },
+      {
+       "kind": "read",
+       "title": "Google: How to do a code review",
+       "url": "https://google.github.io/eng-practices/review/"
+      },
+      {
+       "kind": "read",
+       "title": "Julia Evans: Asking good questions",
+       "url": "https://jvns.ca/blog/good-questions/"
+      },
+      {
+       "kind": "read",
+       "title": "Charity Majors: The Engineer/Manager Pendulum",
+       "url": "https://charity.wtf/2017/05/11/the-engineer-manager-pendulum/"
+      },
+      {
+       "kind": "read",
+       "title": "Conventional Comments",
+       "url": "https://conventionalcomments.org/"
+      }
+     ]
     },
     {
      "title": "Incident leadership: command, postmortems, learning reviews",
@@ -3245,7 +5551,44 @@
       "Learning reviews"
      ],
      "lab": "Run a tabletop incident as commander, and write the postmortem.",
-     "check": "What's the incident commander's job, and what is it not?"
+     "check": "What's the incident commander's job, and what is it not?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Google SRE: Managing Incidents",
+       "url": "https://sre.google/sre-book/managing-incidents/"
+      },
+      {
+       "kind": "read",
+       "title": "PagerDuty Incident Response docs",
+       "url": "https://response.pagerduty.com/"
+      },
+      {
+       "kind": "read",
+       "title": "Atlassian Incident Handbook",
+       "url": "https://www.atlassian.com/incident-management/handbook"
+      },
+      {
+       "kind": "read",
+       "title": "VOID: Verica Open Incident Database",
+       "url": "https://www.thevoid.community/"
+      },
+      {
+       "kind": "read",
+       "title": "Etsy: Debriefing Facilitation Guide",
+       "url": "https://extfiles.etsy.com/DebriefingFacilitationGuide.pdf"
+      },
+      {
+       "kind": "read",
+       "title": "How Complex Systems Fail",
+       "url": "https://how.complexsystems.fail/"
+      },
+      {
+       "kind": "read",
+       "title": "Dan Luu: a collection of postmortems",
+       "url": "https://github.com/danluu/post-mortems"
+      }
+     ]
     },
     {
      "title": "Business acumen and systems thinking",
@@ -3279,7 +5622,29 @@
       "Connecting tech to outcomes"
      ],
      "lab": "Rewrite one technical proposal as a one-page business case.",
-     "check": "What does your biggest technical risk cost the business, in its terms?"
+     "check": "What does your biggest technical risk cost the business, in its terms?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "Donella Meadows: Leverage Points",
+       "url": "https://donellameadows.org/archives/leverage-points-places-to-intervene-in-a-system/"
+      },
+      {
+       "kind": "read",
+       "title": "Stratechery: Aggregation Theory",
+       "url": "https://stratechery.com/aggregation-theory/"
+      },
+      {
+       "kind": "read",
+       "title": "The Personal MBA reading list",
+       "url": "https://personalmba.com/best-business-books/"
+      },
+      {
+       "kind": "read",
+       "title": "FinOps: What is FinOps? (unit economics)",
+       "url": "https://www.finops.org/introduction/what-is-finops/"
+      }
+     ]
     },
     {
      "title": "Public presence: writing, talks, open-source leadership",
@@ -3304,7 +5669,34 @@
       "Open-source leadership"
      ],
      "lab": "Submit a talk proposal to a regional DevOpsDays or meetup.",
-     "check": "What's the one idea people should remember from your talk?"
+     "check": "What's the one idea people should remember from your talk?",
+     "resources": [
+      {
+       "kind": "read",
+       "title": "How to Do Great Work (Paul Graham)",
+       "url": "https://paulgraham.com/greatwork.html"
+      },
+      {
+       "kind": "read",
+       "title": "Julia Evans: Blog about what you've struggled with",
+       "url": "https://jvns.ca/blog/2017/03/20/blogging-principles/"
+      },
+      {
+       "kind": "read",
+       "title": "Open Source Guides",
+       "url": "https://opensource.guide/"
+      },
+      {
+       "kind": "read",
+       "title": "KubeCon + CloudNativeCon events and CFPs",
+       "url": "https://www.cncf.io/kubecon-cloudnativecon-events/"
+      },
+      {
+       "kind": "read",
+       "title": "Google Technical Writing courses",
+       "url": "https://developers.google.com/tech-writing"
+      }
+     ]
     }
    ],
    "why": "Senior engineers solve hard problems. Principal engineers choose which problems to solve, align organisations around solutions, and multiply the people around them. That shows up as demonstrated impact, so the projects here carry the real weight.",

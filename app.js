@@ -124,6 +124,8 @@ function phaseVideoStats(phase) {
 }
 
 
+const KINDS = { course: 'Course', lab: 'Hands-on', docs: 'Docs', read: 'Read', book: 'Book' };
+
 /* Labels the 3D world pins to its objects */
 
 const labelFactory = {
@@ -180,7 +182,10 @@ function renderRail(topicId) {
   el('span', { class: 'course-body' },
     i === 0 ? el('span', { class: 'course-start', text: 'START HERE' }) : null,
     el('span', { class: 'course-title', text: video.title }),
-    el('span', { class: 'course-meta', text: `${isDone(`v:${video.id}`) ? 'Watched · ' : ''}${formatLength(video)} · ${video.by}` })))));
+    el('span', { class: 'course-meta', text: `${isDone(`v:${video.id}`) ? 'Watched · ' : ''}${formatLength(video)} · ${video.by}` }))),
+  ), ...['lab', 'read', 'docs'].flatMap((kind) => found.topic.resources.filter((item) => item.kind === kind).slice(0, 1)).map((item) => el('a', {
+    class: 'rail-link', href: item.url, target: '_blank', rel: 'noopener',
+  }, el('small', { text: KINDS[item.kind] }), el('span', { text: item.title }))));
 }
 
 function videoUrl(video) {
@@ -244,7 +249,7 @@ function bindKeys() {
       openPalette();
       return;
     }
-    if (typing || !$('plan-view').hidden || !$('palette').hidden || !world) return;
+    if (typing || !$('plan-view').hidden || !$('library-view').hidden || !$('palette').hidden || !world) return;
     if ($('panel').contains(document.activeElement) || document.activeElement.type === 'range') return;
     if (event.key === 'ArrowLeft') world.pan(90, 0);
     else if (event.key === 'ArrowRight') world.pan(-90, 0);
@@ -490,6 +495,72 @@ function showPlan() {
   closePanel();
   $('map-view').hidden = true;
   $('plan-view').hidden = false;
+  $('library-view').hidden = true;
+  document.body.classList.remove('in-map');
+  window.scrollTo(0, 0);
+  world?.pause(true);
+}
+
+function libraryItems() {
+  const found = new Map();
+  const add = (key, entry, topic) => {
+    if (!found.has(key)) found.set(key, { ...entry, key, topics: [] });
+    if (topic) found.get(key).topics.push(topic);
+  };
+  data.phases.forEach((phase) => {
+    phase.topics.forEach((topic) => {
+      const ref = { phase, topic };
+      topic.videos.forEach((video) => add(`v:${video.id}`, { kind: 'course', title: video.title, sub: `${formatLength(video)} · ${video.by}`, url: videoUrl(video), video, phase }, ref));
+      topic.resources.forEach((item) => add(`r:${item.url}`, { kind: item.kind, title: item.title, url: item.url, phase }, ref));
+    });
+    phase.reading.filter((item) => !item.free).forEach((item) => add(`b:${item.title}`, { kind: 'book', title: item.title, sub: item.how, phase }));
+    phase.reading.filter((item) => item.free).forEach((item) => add(`b:${item.title}`, { kind: 'read', title: item.title, sub: item.how, phase }));
+  });
+  return [...found.values()];
+}
+
+const library = { items: [], kind: 'all', phase: 'all', query: '', hideDone: false };
+
+function renderLibraryFilters() {
+  const counts = (kind) => (kind === 'all' ? library.items.length : library.items.filter((item) => item.kind === kind).length);
+  const chip = (group, id, label, swatch) => el('button', {
+    class: 'chip', type: 'button', 'aria-pressed': String(library[group] === id), style: swatch ? `--c:${swatch}` : false,
+    onclick: () => { library[group] = id; renderLibraryFilters(); renderLibrary(); },
+  }, swatch ? el('i', { class: 'swatch' }) : null, label);
+  $('lib-kinds').replaceChildren(chip('kind', 'all', `All ${counts('all')}`), ...Object.keys(KINDS).map((kind) => chip('kind', kind, `${KINDS[kind]} ${counts(kind)}`)));
+  $('lib-phases').replaceChildren(chip('phase', 'all', 'All phases'), ...data.phases.map((phase) => chip('phase', phase.id, phase.short, color(phase))));
+}
+
+function renderLibrary() {
+  const query = library.query.trim().toLowerCase();
+  const rows = library.items.filter((item) => (library.kind === 'all' || item.kind === library.kind)
+    && (library.phase === 'all' || item.phase.id === library.phase || item.topics.some(({ phase }) => phase.id === library.phase))
+    && !(library.hideDone && isDone(item.key))
+    && (!query || `${item.title} ${item.sub || ''} ${item.topics.map(({ topic }) => topic.title).join(' ')}`.toLowerCase().includes(query)));
+  $('lib-count').textContent = `${rows.length} ${rows.length === 1 ? 'resource' : 'resources'}`;
+  $('lib-list').replaceChildren(...rows.map((item) => el('li', { class: `lib-row${isDone(item.key) ? ' is-done' : ''}`, style: `--c:${color(item.phase)}` },
+    el('input', { class: 'check', type: 'checkbox', 'aria-label': `Done: ${item.title}`, checked: isDone(item.key), onchange: (event) => { setDone(item.key, event.target.checked); renderLibrary(); } }),
+    el('span', { class: 'lib-kind', text: KINDS[item.kind] }),
+    el('div', { class: 'lib-main' },
+      item.url ? el('a', { href: item.url, target: '_blank', rel: 'noopener', text: item.title }) : el('strong', { text: item.title }),
+      item.sub ? el('small', { text: item.sub }) : null),
+    el('div', { class: 'lib-topics' },
+      item.video ? el('button', { class: 'linkish', type: 'button', text: '▶ Play', onclick: () => playVideo(item.video) }) : null,
+      ...item.topics.slice(0, 2).map(({ phase, topic }) => el('button', {
+        class: 'linkish', type: 'button', text: topic.short,
+        onclick: () => { showMap(); focusTopic(phase.id, topic.id); },
+      })),
+      !item.topics.length ? el('button', { class: 'linkish', type: 'button', text: item.phase.short, onclick: () => { showMap(); openPanel(item.phase.id, null, 'reading'); world?.focusPhase(item.phase.id); } }) : null))));
+}
+
+function showLibrary() {
+  stopPlay();
+  closePanel();
+  if (!library.items.length) { library.items = libraryItems(); renderLibraryFilters(); }
+  renderLibrary();
+  $('map-view').hidden = true;
+  $('plan-view').hidden = true;
+  $('library-view').hidden = false;
   document.body.classList.remove('in-map');
   window.scrollTo(0, 0);
   world?.pause(true);
@@ -498,6 +569,7 @@ function showPlan() {
 function showMap() {
   if (!world) return;
   $('plan-view').hidden = true;
+  $('library-view').hidden = true;
   $('map-view').hidden = false;
   document.body.classList.add('in-map');
   world.pause(false);
@@ -519,6 +591,21 @@ function renderVideo(video, first) {
         el('a', { class: 'linkish', href: videoUrl(video), target: '_blank', rel: 'noopener', text: 'Open on YouTube ↗' }))));
 }
 
+function renderResources(topic, kind) {
+  const items = topic.resources.filter((item) => item.kind === kind);
+  if (!items.length) return null;
+  return el('div', {},
+    el('p', { class: 'detail-label', text: kind === 'lab' ? 'Hands-on practice' : kind === 'docs' ? 'Official docs' : kind === 'read' ? 'Free reading' : 'Books' }),
+    el('ul', { class: 'res-list' }, ...items.map(renderResource)));
+}
+
+function renderResource(item) {
+  const key = `r:${item.url}`;
+  return el('li', { class: isDone(key) ? 'is-done' : '' },
+    el('input', { class: 'check', type: 'checkbox', 'aria-label': `Done: ${item.title}`, checked: isDone(key), onchange: (event) => setDone(key, event.target.checked) }),
+    el('a', { href: item.url, target: '_blank', rel: 'noopener', text: item.title }));
+}
+
 function renderTopic(topic) {
   const expanded = openTopic === topic.id;
   const key = `t:${topic.id}`;
@@ -538,12 +625,13 @@ function renderTopic(topic) {
         el('span', { class: 'topic-meta' },
           topic.added ? el('span', { class: 'note-pill', text: 'New' }) : null,
           topic.weak ? el('span', { class: 'note-pill', text: 'Thin coverage' }) : null,
-          `${count} free ${count === 1 ? 'course' : 'courses'}`)),
+          `${count} free ${count === 1 ? 'course' : 'courses'} · ${topic.resources.length} resources`)),
       el('span', { class: 'chev', 'aria-hidden': 'true', text: '›' }))));
   if (expanded) {
     row.append(el('div', { class: 'topic-detail' },
       el('div', {}, el('p', { class: 'detail-label', text: 'What to learn' }), el('ul', { class: 'learn' }, ...topic.learn.map((line) => el('li', { text: line })))),
       el('div', {}, el('p', { class: 'detail-label', text: 'Free courses' }), el('div', { class: 'vids' }, ...topic.videos.map((video, i) => renderVideo(video, i === 0)))),
+      ...['lab', 'docs', 'read', 'book'].map((kind) => renderResources(topic, kind)),
       el('div', { class: 'callout' }, el('p', { class: 'detail-label', text: 'Try it' }), topic.lab),
       el('div', { class: 'callout' }, el('p', { class: 'detail-label', text: 'Check yourself' }), topic.check)));
   }
@@ -574,6 +662,7 @@ function renderOverview(phase) {
       fact(String(phase.topics.length), 'topics'),
       fact(String(stats.courses), `free courses (${stats.playlists} playlists)`),
       fact(`${stats.hours} h`, 'of single videos, plus the playlists'),
+      fact(String(phase.topics.reduce((sum, topic) => sum + topic.resources.length, 0)), 'docs, labs and readings'),
       fact(String(core), core === 1 ? 'core exam' : 'core exams'),
       fact(phase.specialty, 'deep-dive idea')),
     el('h3', { text: "You're done when you can" }),
@@ -703,6 +792,9 @@ function searchIndex() {
     });
     phase.topics.forEach((topic) => {
       items.push({ label: topic.title, hint: 'Topic', phase, go: () => focusTopic(phase.id, topic.id), text: `${topic.title} ${topic.short} ${topic.lab} ${topic.learn.join(' ')}` });
+      topic.resources.forEach((item) => {
+        items.push({ label: item.title, hint: KINDS[item.kind], phase, go: () => window.open(item.url, '_blank', 'noopener'), text: `${item.title} ${topic.short}` });
+      });
       topic.videos.forEach((video) => {
         items.push({ label: video.title, hint: formatLength(video), phase, go: () => focusTopic(phase.id, topic.id), text: `${video.title} ${video.by}` });
       });
@@ -808,6 +900,11 @@ function bindEvents() {
   $('today').addEventListener('click', () => { stopPlay(); setMonth(currentMonth()); world?.focusMonth(month); });
   $('fit').addEventListener('click', () => { stopPlay(); overviewAll(); });
   $('to-plan').addEventListener('click', showPlan);
+  $('to-library').addEventListener('click', showLibrary);
+  $('plan-library').addEventListener('click', showLibrary);
+  $('lib-back').addEventListener('click', () => { if (world) showMap(); else showPlan(); });
+  $('lib-search').addEventListener('input', (event) => { library.query = event.target.value; renderLibrary(); });
+  $('lib-hide').addEventListener('change', (event) => { library.hideDone = event.target.checked; renderLibrary(); });
   $('to-map').addEventListener('click', () => { showMap(); });
   $('open-search').addEventListener('click', openPalette);
   $('palette-input').addEventListener('input', (event) => renderPalette(event.target.value));
