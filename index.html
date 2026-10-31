@@ -13,61 +13,48 @@
 </script>
 </head>
 <body>
-<a class="skip" href="#stage">Skip to the map</a>
+<a class="skip" href="#road">Skip to the roadmap</a>
 
 <div id="map-view">
-  <div class="stage" id="stage" tabindex="0" role="application" aria-label="The Path trail map. Drag to move, scroll or pinch to zoom, Tab through phases and topics. The Plan view lists everything as text.">
-    <canvas id="gl" aria-hidden="true"></canvas>
-    <div class="labels" id="labels"></div>
-  </div>
-
-  <header class="hud hud-top">
-    <section class="now" aria-label="What to do next">
-      <p class="now-status"><strong>The Path</strong> <span id="now-status"></span></p>
-      <p class="now-title" id="now-title"></p>
-      <p class="now-detail" id="now-detail"></p>
-      <div class="now-actions">
-        <button class="now-go" id="now-go" type="button"></button>
-        <button class="linkish" id="now-topic" type="button">Open topic</button>
-      </div>
-    </section>
-    <div class="hud-actions">
-      <button class="hud-btn" id="open-search" type="button" aria-label="Search everything"><span>Search</span><kbd>/</kbd></button>
-      <button class="hud-btn" id="fit" type="button">Overview</button>
-      <button class="hud-btn" id="to-library" type="button">Library</button>
-      <button class="hud-btn" id="to-plan" type="button">Plan</button>
-      <button class="hud-btn" id="theme" type="button">Theme</button>
+  <header class="topbar">
+    <div class="wrap topbar-in">
+      <strong class="brand">The Path</strong>
+      <nav class="topnav" aria-label="Views">
+        <button class="hud-btn" id="open-search" type="button"><span>Search</span><kbd>/</kbd></button>
+        <button class="hud-btn" id="to-library" type="button">Library</button>
+        <button class="hud-btn" id="to-plan" type="button">Plan</button>
+        <button class="hud-btn" id="theme" type="button">Theme</button>
+      </nav>
     </div>
   </header>
-
-  <div class="rail" id="rail" hidden></div>
-  <aside class="legend" aria-label="Map legend">
-    <span><i class="lg-line"></i>Route, bright once walked</span>
-    <span><i class="lg-pin"></i>Topic</span>
-    <span><i class="lg-gate">◆</i>Exam gate</span>
-    <span><i class="lg-tower"></i>Phase tower, one level per topic</span>
-  </aside>
-  <p class="hint-keys" id="hint-keys">Drag to move · Scroll to zoom · Right-drag to rotate · Click any pin · ▶ walks the route</p>
-
-  <div class="dock" role="group" aria-label="Journey through the 36 months">
-    <button class="dock-play" id="play" type="button" aria-label="Climb the mountain">▶</button>
-    <div class="dock-main">
-      <p class="dock-text" id="dock-text"></p>
-      <div class="gantt" id="gantt" aria-hidden="true"></div>
-      <label><span class="sr">Month in the plan</span><input id="month" type="range" min="1" max="36" step="1" value="1"></label>
-    </div>
-    <div class="dock-side">
-      <button class="hud-btn" id="today" type="button">Today</button>
+  <main class="wrap road-page">
+    <section class="now-grid" aria-label="What to do now">
+      <div class="action" id="action"></div>
+      <div class="week-card" id="week-card"></div>
+    </section>
+    <section class="stats-row" id="stats-row" aria-label="Your progress"></section>
+    <section class="strip" id="strip" aria-label="36-month timeline"></section>
+    <div class="road-tools">
+      <h2>The roadmap</h2>
+      <div class="chips" id="road-filter" role="group" aria-label="Filter the roadmap">
+        <button class="chip" type="button" data-filter="all">Everything</button>
+        <button class="chip" type="button" data-filter="focus">Now and next</button>
+        <button class="chip" type="button" data-filter="todo">Hide finished</button>
+      </div>
       <label class="dock-opt"><input id="optional" type="checkbox"> Optional exams</label>
     </div>
-  </div>
+    <section class="road" id="road" aria-label="Roadmap by phase">
+      <svg class="links" id="links" aria-hidden="true" width="100%"></svg>
+      <div class="road-rows" id="road-rows"></div>
+    </section>
+  </main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </div>
 
 <div id="plan-view" hidden>
   <div class="bar-top">
     <div class="wrap bar-inner">
-      <button class="primary" id="to-map" type="button">← Back to the map</button>
+      <button class="primary" id="to-map" type="button">← Back to the roadmap</button>
       <button class="ghost" id="plan-library" type="button">Library</button>
       <nav aria-label="Sections">
         <a href="#ninety">First 90 days</a>
@@ -84,10 +71,6 @@
   </header>
   <main>
     <section class="wrap stats" aria-label="Your progress" id="stats"></section>
-    <section class="wrap" aria-labelledby="phases-title">
-      <div class="section-head"><h2 id="phases-title">All phases</h2><p class="hint">Every topic, course, lab and exam, without the 3D map.</p></div>
-      <ul class="phase-list" id="phase-list"></ul>
-    </section>
 <section class="wrap" id="ninety" aria-labelledby="ninety-title">
     <div class="section-head">
       <h2 id="ninety-title">Your first 90 days</h2>
@@ -189,7 +172,6 @@
   </main>
 </div>
 
-<div class="tip" id="tip" role="tooltip" hidden></div>
 <div class="scrim" id="scrim" hidden></div>
 <aside class="panel" id="panel" aria-labelledby="panel-title" tabindex="-1" hidden></aside>
 <div class="player-float" id="player" hidden></div>
@@ -199,6 +181,6 @@
     <ul id="palette-list" role="listbox"></ul>
   </div>
 </div>
-<script type="module" src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

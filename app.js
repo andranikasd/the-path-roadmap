@@ -1,4 +1,4 @@
-import { createScene } from './scene.js';
+'use strict';
 
 const STORE_KEY = 'the-path-progress-v1';
 const THEME_KEY = 'the-path-theme';
@@ -8,13 +8,10 @@ const TOTAL_MONTHS = 36;
 let data;
 let progress = loadProgress();
 let selectedPhase = null;
-let hoveredPhase = null;
 let activeTab = 'overview';
 let openTopic = null;
 let month = 1;
-let playing = false;
 let searchQuery = '';
-let world = null;      // the 3D scene, or null when WebGL is unavailable
 
 const $ = (id) => document.getElementById(id);
 
@@ -60,7 +57,6 @@ function celebrate(topicId) {
   const found = allTopics().find(({ topic }) => topic.id === topicId);
   if (!found) return;
   const whole = topicsDone(found.phase) === found.phase.topics.length;
-  world?.celebrate(topicId, whole);
   if (whole) toast(`Phase ${found.phase.n} complete: ${found.phase.title}`);
 }
 
@@ -126,68 +122,6 @@ function phaseVideoStats(phase) {
 
 const KINDS = { course: 'Course', lab: 'Hands-on', docs: 'Docs', read: 'Read', book: 'Book' };
 
-/* Labels the 3D world pins to its objects */
-
-const labelFactory = {
-  mile: (m) => el('div', {
-    class: `wnode mile${m === 0 || m === 36 ? ' end' : ''}`, 'aria-hidden': 'true',
-    text: m === 0 ? `Start · ${monthLabel(1)}` : m === 36 ? `Summit · ${monthLabel(36)}` : `Month ${m}`,
-  }),
-  you: () => el('div', { class: 'wnode you', id: 'you', 'aria-hidden': 'true' }),
-  phase: (phase) => el('button', {
-    class: 'wnode plabel', type: 'button', style: `--c:${color(phase)}`, 'data-phase': phase.id,
-    'aria-label': `Phase ${phase.n}: ${phase.title}. Open details.`,
-    onclick: () => focusPhase(phase.id),
-    onmouseenter: () => hoverPhase(phase.id),
-    onmouseleave: () => hoverPhase(null),
-    onfocus: () => hoverPhase(phase.id),
-    onblur: () => hoverPhase(null),
-  },
-  el('span', { class: 'plabel-top' }, el('b', { class: 'plabel-n', text: String(phase.n) }), el('strong', { text: phase.short }), el('em', { 'data-state': phase.id })),
-  el('span', { class: 'plabel-sub', 'data-sub': phase.id }),
-  el('span', { class: 'plabel-meter' }, el('i', { 'data-meter': phase.id }))),
-  topic: (phase, topic) => el('div', {
-    class: 'wnode moon', style: `--c:${color(phase)}`, 'data-moon': topic.id, 'data-phase': phase.id, title: topic.title,
-    onclick: (event) => { if (!event.target.classList.contains('tick')) focusTopic(phase.id, topic.id); },
-  },
-  el('input', {
-    class: 'tick', type: 'checkbox', 'aria-label': `Done: ${topic.title}`, 'data-key': `t:${topic.id}`,
-    onchange: (event) => setDone(`t:${topic.id}`, event.target.checked),
-  }),
-  el('button', { class: 'moon-label', type: 'button', text: topic.short })),
-  exam: (phase, cert) => el('button', {
-    class: `wnode satellite${cert.core ? '' : ' opt'}`, type: 'button', style: `--c:${color(phase)}`, 'data-phase': phase.id,
-    'data-cert': certKey(cert), 'data-month': cert.month, 'data-exam': cert.core ? 'core' : 'optional', text: cert.exam,
-    title: `${cert.name}, target ${monthLabel(cert.month)}`, onclick: () => openPanel(phase.id, null, 'exams'),
-  }),
-};
-
-function hoverPhase(id) {
-  hoveredPhase = id;
-  applyHighlight();
-}
-
-/* Course rail: the selected topic's courses, always fully visible */
-
-function renderRail(topicId) {
-  const rail = $('rail');
-  const found = topicId && allTopics().find(({ topic }) => topic.id === topicId);
-  rail.hidden = !found;
-  if (!found) { rail.replaceChildren(); return; }
-  rail.style.setProperty('--c', color(found.phase));
-  rail.replaceChildren(...found.topic.videos.map((video, i) => el('button', {
-    class: `course${isDone(`v:${video.id}`) ? ' watched' : ''}`, type: 'button', 'aria-label': `Play ${video.title}`, onclick: () => playVideo(video),
-  },
-  el('img', { src: video.thumb, alt: '', loading: 'lazy', draggable: 'false' }),
-  el('span', { class: 'course-body' },
-    i === 0 ? el('span', { class: 'course-start', text: 'START HERE' }) : null,
-    el('span', { class: 'course-title', text: video.title }),
-    el('span', { class: 'course-meta', text: `${isDone(`v:${video.id}`) ? 'Watched · ' : ''}${formatLength(video)} · ${video.by}` }))),
-  ), ...['lab', 'read', 'docs'].flatMap((kind) => found.topic.resources.filter((item) => item.kind === kind).slice(0, 1)).map((item) => el('a', {
-    class: 'rail-link', href: item.url, target: '_blank', rel: 'noopener',
-  }, el('small', { text: KINDS[item.kind] }), el('span', { text: item.title }))));
-}
-
 function videoUrl(video) {
   return video.kind === 'playlist'
     ? `https://www.youtube.com/playlist?list=${video.id}`
@@ -218,98 +152,6 @@ function playVideo(video) {
   );
 }
 
-/* Camera commands */
-
-function panelShift() {
-  // On tall screens the HUD sits on top, so the mountain rides lower.
-  if ($('panel').hidden) return world?.setPanelShift(0, window.innerHeight > window.innerWidth ? -window.innerHeight * 0.1 : 0);
-  if (window.innerWidth <= 760) return world?.setPanelShift(0, $('panel').offsetHeight / 2 - 30);
-  return world?.setPanelShift($('panel').offsetWidth / 2, 0);
-}
-
-const focusPhase = (phaseId) => {
-  openPanel(phaseId);
-  world?.focusPhase(phaseId);
-};
-
-function focusTopic(phaseId, topicId) {
-  openPanel(phaseId, topicId, 'topics');
-}
-
-function bindKeys() {
-  document.addEventListener('keydown', (event) => {
-    const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName) && document.activeElement.type !== 'checkbox' && document.activeElement.type !== 'range';
-    if (event.key === 'Escape') {
-      if (!$('palette').hidden) closePalette();
-      else if (selectedPhase) closePanel();
-      return;
-    }
-    if ((event.key === 'k' && (event.ctrlKey || event.metaKey)) || (event.key === '/' && !typing)) {
-      event.preventDefault();
-      openPalette();
-      return;
-    }
-    if (typing || !$('plan-view').hidden || !$('library-view').hidden || !$('palette').hidden || !world) return;
-    if ($('panel').contains(document.activeElement) || document.activeElement.type === 'range') return;
-    if (event.key === 'ArrowLeft') world.pan(90, 0);
-    else if (event.key === 'ArrowRight') world.pan(-90, 0);
-    else if (event.key === 'ArrowUp') world.pan(0, 90);
-    else if (event.key === 'ArrowDown') world.pan(0, -90);
-    else if (event.key === '+' || event.key === '=') world.zoom(0.8);
-    else if (event.key === '-') world.zoom(1.25);
-    else if (event.key === '0') overviewAll();
-    else if (event.key === ' ' && event.target === $('stage')) { event.preventDefault(); togglePlay(); }
-  });
-}
-
-function dismissHint() {
-  $('hint-keys').classList.add('gone');
-}
-
-function overviewAll() {
-  closePanel();
-  world?.overview();
-}
-
-
-/* Highlight and state */
-
-function applyHighlight() {
-  const active = hoveredPhase || selectedPhase;
-  world?.setActive(active);
-  document.querySelectorAll('.wnode[data-phase]').forEach((node) => {
-    const id = node.dataset.phase;
-    const related = !active || id === active || ancestors(active).has(id) || phaseById(id).needs.includes(active);
-    node.classList.toggle('dim', !related);
-  });
-}
-
-function syncWorld() {
-  data.phases.forEach((phase) => {
-    const done = topicsDone(phase) === phase.topics.length;
-    const label = done ? 'Done' : inFocus(phase) ? 'Now' : practising(phase) ? 'Ongoing' : '';
-    const state = document.querySelector(`[data-state="${phase.id}"]`);
-    if (!state) return;
-    state.textContent = label;
-    state.hidden = !label;
-    document.querySelector(`[data-sub="${phase.id}"]`).textContent = `${topicsDone(phase)}/${phase.topics.length} topics · M${phase.start}–${phase.end}`;
-    document.querySelector(`[data-meter="${phase.id}"]`).style.width = `${phasePct(phase)}%`;
-    document.querySelector(`.plabel[data-phase="${phase.id}"]`).classList.toggle('live', inFocus(phase));
-  });
-  document.querySelectorAll('[data-key]').forEach((input) => {
-    input.checked = isDone(input.dataset.key);
-    input.closest('.moon')?.classList.toggle('done', input.checked);
-  });
-  const showOptional = $('optional').checked;
-  document.querySelectorAll('.satellite').forEach((node) => {
-    node.classList.toggle('passed', isDone(node.dataset.cert));
-    node.classList.toggle('due', Number(node.dataset.month) === month);
-    node.hidden = node.dataset.exam === 'optional' && !showOptional;
-  });
-  document.querySelectorAll('#ladder tr.is-opt').forEach((row) => row.classList.toggle('hide', !showOptional));
-  document.querySelectorAll('.gantt b').forEach((mark) => { mark.hidden = mark.dataset.exam === 'optional' && !showOptional; });
-  world?.sync();
-}
 
 function toast(message) {
   const node = $('toast');
@@ -317,118 +159,6 @@ function toast(message) {
   node.classList.add('show');
   clearTimeout(toast.timer);
   toast.timer = setTimeout(() => node.classList.remove('show'), 2600);
-}
-function setMonth(value) {
-  month = clampMonth(value);
-  world?.setMonth(month);
-  const you = $('you');
-  if (you) you.textContent = clampMonth(currentMonth()) === month ? `You · ${monthLabel(month)}` : monthLabel(month);
-  $('month').value = month;
-  const focus = data.phases.filter((phase) => inFocus(phase)).map((phase) => phase.short);
-  const showOptional = $('optional').checked;
-  const exams = allCerts().filter((cert) => cert.core || showOptional);
-  const due = exams.filter((cert) => cert.month === month);
-  const next = exams.find((cert) => cert.month > month);
-  $('dock-text').replaceChildren(
-    el('b', { text: `Month ${month} · ${monthLabel(month)}` }),
-    ` · In focus: ${focus.join(', ') || 'none'}`,
-    due.length ? el('b', { text: ` · Exam: ${due.map((cert) => cert.exam).join(', ')}` }) : '',
-    next ? ` · Next exam: ${next.exam}, ${monthLabel(next.month)}` : '',
-  );
-  syncWorld();
-  return due;
-}
-
-function stopPlay() {
-  if (!playing) return;
-  playing = false;
-  world?.stopJourney();
-  $('play').textContent = '▶';
-  $('play').setAttribute('aria-label', 'Climb the mountain');
-}
-
-function togglePlay() {
-  if (playing) { stopPlay(); return; }
-  if (!world) return;
-  closePanel();
-  if (month >= TOTAL_MONTHS) setMonth(1);
-  playing = true;
-  $('play').textContent = '❚❚';
-  $('play').setAttribute('aria-label', 'Pause the climb');
-  world.startJourney(month, (m) => {
-    const before = data.phases.filter((phase) => inFocus(phase, m - 1)).map((phase) => phase.id);
-    const due = setMonth(m);
-    const started = data.phases.find((phase) => phase.start === m && !before.includes(phase.id));
-    if (due.length) toast(`${monthLabel(m)}: ${due.map((cert) => cert.name).join(', ')}`);
-    else if (started) toast(`Phase ${started.n} begins: ${started.title}`);
-  }, () => {
-    stopPlay();
-    setMonth(TOTAL_MONTHS);
-    toast('Month 36: the summit. Principal Engineer.');
-    world.overview();
-  });
-}
-
-function renderGantt() {
-  const gantt = $('gantt');
-  const pct = (value) => ((value - 1) / (TOTAL_MONTHS - 1)) * 100;
-  data.phases.forEach((phase, i) => {
-    gantt.append(el('i', { style: `--c:${color(phase)};left:${pct(phase.start)}%;width:${pct(phase.end + 1) - pct(phase.start)}%;top:${i * 2.2}px` }));
-  });
-  allCerts().forEach((cert) => gantt.append(el('b', { 'data-exam': cert.core ? 'core' : 'optional', style: `left:${pct(cert.month)}%` })));
-}
-
-
-/* Now card: what to do next, in one click */
-
-function nextTopic() {
-  const now = clampMonth(currentMonth());
-  const ordered = data.phases.slice().sort((a, b) => Number(inFocus(b, now)) - Number(inFocus(a, now)) || a.start - b.start);
-  for (const phase of ordered) {
-    const topic = phase.topics.find((candidate) => !isDone(`t:${candidate.id}`));
-    if (topic) return { phase, topic };
-  }
-  return null;
-}
-
-function renderNow() {
-  const total = allTopics().length;
-  const done = data.phases.reduce((sum, phase) => sum + topicsDone(phase), 0);
-  const now = currentMonth();
-  const exam = allCerts().find((cert) => cert.core && !isDone(certKey(cert)));
-  let when = `Month ${clampMonth(now)} of ${TOTAL_MONTHS}`;
-  if (now < 1) when = `Starts ${monthLabel(1)}`;
-  if (now > TOTAL_MONTHS) when = 'The 36 months are up';
-  const away = exam ? exam.month - Math.max(now, 1) : 0;
-  const examText = !exam ? 'All core exams passed' : away > 0 ? `${exam.exam} in ${away} ${away === 1 ? 'month' : 'months'}` : away === 0 ? `${exam.exam} is due this month` : `${exam.exam} is ${-away} ${away === -1 ? 'month' : 'months'} overdue`;
-  $('now-status').textContent = `${when} · ${examText} · ${done}/${total} topics`;
-  const next = nextTopic();
-  const go = $('now-go');
-  const open = $('now-topic');
-  if (!next) {
-    $('now-title').textContent = 'Every topic is done.';
-    $('now-detail').textContent = 'Nothing left on the road.';
-    go.hidden = true;
-    open.hidden = true;
-    return;
-  }
-  const video = next.topic.videos.find((candidate) => !isDone(`v:${candidate.id}`));
-  $('now-title').textContent = next.topic.short;
-  $('now-title').style.setProperty('--c', color(next.phase));
-  $('now-detail').textContent = video ? `${video.title} · ${formatLength(video)}` : `Courses watched. Lab: ${next.topic.lab}`;
-  go.hidden = !video;
-  go.textContent = done || Object.keys(progress.items).some((key) => key.startsWith('v:')) ? '▶ Continue' : '▶ Start';
-  go.onclick = () => { focusTopic(next.phase.id, next.topic.id); if (video) playVideo(video); };
-  open.hidden = false;
-  open.onclick = () => focusTopic(next.phase.id, next.topic.id);
-}
-
-function renderPhaseList() {
-  $('phase-list').replaceChildren(...data.phases.map((phase) => el('li', { style: `--c:${color(phase)}` },
-    el('button', { class: 'phase-row', type: 'button', onclick: () => openPanel(phase.id, null, 'topics') },
-      el('i', { class: 'swatch' }),
-      el('strong', { text: phase.title }),
-      el('span', { text: `${topicsDone(phase)}/${phase.topics.length} topics · ${monthLabel(phase.start)} – ${monthLabel(phase.end)}` })))));
 }
 
 function renderStats() {
@@ -463,7 +193,7 @@ function renderLadder() {
     el('td', { class: 'num', text: cert.exam }),
     el('td', {}, el('button', {
       class: 'phase-link', type: 'button', style: `--c:${color(cert.phase)}`,
-      onclick: () => { showMap(); focusPhase(cert.phase.id); activeTab = 'exams'; renderPanel(); },
+      onclick: () => { showMap(); openPanel(cert.phase.id, null, 'exams'); },
     }, el('i', { class: 'swatch' }), cert.phase.short)),
     el('td', {}, el('span', { class: `pill${cert.core ? ' solid' : ''}`, text: cert.core ? 'Core' : 'Optional' })),
     el('td', { class: 'num', text: cert.cost }),
@@ -491,14 +221,11 @@ function renderStatic() {
 }
 
 function showPlan() {
-  stopPlay();
   closePanel();
   $('map-view').hidden = true;
   $('plan-view').hidden = false;
   $('library-view').hidden = true;
-  document.body.classList.remove('in-map');
   window.scrollTo(0, 0);
-  world?.pause(true);
 }
 
 function libraryItems() {
@@ -550,29 +277,24 @@ function renderLibrary() {
         class: 'linkish', type: 'button', text: topic.short,
         onclick: () => { showMap(); focusTopic(phase.id, topic.id); },
       })),
-      !item.topics.length ? el('button', { class: 'linkish', type: 'button', text: item.phase.short, onclick: () => { showMap(); openPanel(item.phase.id, null, 'reading'); world?.focusPhase(item.phase.id); } }) : null))));
+      !item.topics.length ? el('button', { class: 'linkish', type: 'button', text: item.phase.short, onclick: () => { showMap(); openPanel(item.phase.id, null, 'reading'); } }) : null))));
 }
 
 function showLibrary() {
-  stopPlay();
   closePanel();
   if (!library.items.length) { library.items = libraryItems(); renderLibraryFilters(); }
   renderLibrary();
   $('map-view').hidden = true;
   $('plan-view').hidden = true;
   $('library-view').hidden = false;
-  document.body.classList.remove('in-map');
   window.scrollTo(0, 0);
-  world?.pause(true);
 }
 
 function showMap() {
-  if (!world) return;
   $('plan-view').hidden = true;
   $('library-view').hidden = true;
   $('map-view').hidden = false;
-  document.body.classList.add('in-map');
-  world.pause(false);
+  drawLinks();
 }
 
 
@@ -606,6 +328,12 @@ function renderResource(item) {
     el('a', { href: item.url, target: '_blank', rel: 'noopener', text: item.title }));
 }
 
+function stepCallout(key, label, text) {
+  return el('label', { class: 'callout step-callout' },
+    el('input', { class: 'check', type: 'checkbox', checked: isDone(key), onchange: (event) => setDone(key, event.target.checked) }),
+    el('span', {}, el('span', { class: 'detail-label', text: label }), text));
+}
+
 function renderTopic(topic) {
   const expanded = openTopic === topic.id;
   const key = `t:${topic.id}`;
@@ -632,8 +360,12 @@ function renderTopic(topic) {
       el('div', {}, el('p', { class: 'detail-label', text: 'What to learn' }), el('ul', { class: 'learn' }, ...topic.learn.map((line) => el('li', { text: line })))),
       el('div', {}, el('p', { class: 'detail-label', text: 'Free courses' }), el('div', { class: 'vids' }, ...topic.videos.map((video, i) => renderVideo(video, i === 0)))),
       ...['lab', 'docs', 'read', 'book'].map((kind) => renderResources(topic, kind)),
-      el('div', { class: 'callout' }, el('p', { class: 'detail-label', text: 'Try it' }), topic.lab),
-      el('div', { class: 'callout' }, el('p', { class: 'detail-label', text: 'Check yourself' }), topic.check)));
+      stepCallout(`l:${topic.id}`, 'Do the lab', topic.lab),
+      stepCallout(`s:${topic.id}`, 'Answer without notes', topic.check),
+      el('button', {
+        class: 'now-go', type: 'button', text: isDone(key) ? 'Topic done ✓' : 'Mark topic done',
+        onclick: () => setDone(key, !isDone(key)),
+      })));
   }
   return row;
 }
@@ -729,16 +461,10 @@ function renderPanel() {
 function selectTopic(topicId) {
   openTopic = topicId;
   renderPanel();
-  renderRail(topicId);
-  panelShift();
-  if (topicId) world?.focusTopic(topicId);
-  else if (selectedPhase) world?.focusPhase(selectedPhase);
 }
 
 function openPanel(phaseId, topicId = null, tab = 'overview') {
   if (!phaseById(phaseId)) return;
-  stopPlay();
-  dismissHint();
   selectedPhase = phaseId;
   activeTab = tab;
   $('panel').hidden = false;
@@ -750,35 +476,31 @@ function openPanel(phaseId, topicId = null, tab = 'overview') {
     if (row) $('panel').scrollTop = row.offsetTop - $('panel').querySelector('.panel-head').offsetHeight - 8;
   } else {
     openTopic = null;
-    renderRail(null);
     renderPanel();
     $('panel').scrollTop = 0;
   }
-  panelShift();
-  applyHighlight();
+  renderRoad();
 }
 
 function closePanel() {
   if (!selectedPhase) return;
   selectedPhase = null;
   openTopic = null;
-  renderRail(null);
   $('panel').hidden = true;
   document.body.classList.remove('panel-open');
-  panelShift();
-  applyHighlight();
+  renderRoad();
   history.replaceState(null, '', location.pathname + location.search);
 }
 
 function refresh() {
   renderStats();
   renderNow();
-  renderPhaseList();
+  renderStrip();
+  renderRoad();
+  syncOptional();
   renderLadder();
   renderNinety();
-  syncWorld();
   if (selectedPhase) renderPanel();
-  if (openTopic) renderRail(openTopic);
 }
 
 /* Command palette */
@@ -808,7 +530,6 @@ let paletteResults = [];
 let paletteCursor = 0;
 
 function openPalette() {
-  stopPlay();
   showMap();
   if (!paletteIndex.length) paletteIndex = searchIndex();
   $('palette').hidden = false;
@@ -819,7 +540,6 @@ function openPalette() {
 
 function closePalette() {
   $('palette').hidden = true;
-  $('stage').focus();
 }
 
 function renderPalette(raw) {
@@ -831,11 +551,6 @@ function renderPalette(raw) {
     .slice(0, 30);
   paletteCursor = 0;
   drawPaletteList();
-  document.querySelectorAll('.moon').forEach((node) => {
-    const topic = allTopics().find(({ topic: candidate }) => candidate.id === node.dataset.moon).topic;
-    const hay = `${topic.title} ${topic.short} ${topic.learn.join(' ')} ${topic.videos.map((video) => video.title).join(' ')}`.toLowerCase();
-    node.classList.toggle('match', Boolean(searchQuery) && hay.includes(searchQuery));
-  });
 }
 
 function drawPaletteList() {
@@ -894,15 +609,17 @@ function openFromHash() {
 }
 
 function bindEvents() {
-  $('optional').addEventListener('change', () => setMonth(month));
-  $('play').addEventListener('click', togglePlay);
-  $('month').addEventListener('input', (event) => { stopPlay(); setMonth(Number(event.target.value)); world?.focusMonth(month); });
-  $('today').addEventListener('click', () => { stopPlay(); setMonth(currentMonth()); world?.focusMonth(month); });
-  $('fit').addEventListener('click', () => { stopPlay(); overviewAll(); });
+  $('optional').addEventListener('change', refresh);
+  $('road-filter').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-filter]');
+    if (!button) return;
+    roadFilter = button.dataset.filter;
+    renderRoad();
+  });
   $('to-plan').addEventListener('click', showPlan);
   $('to-library').addEventListener('click', showLibrary);
   $('plan-library').addEventListener('click', showLibrary);
-  $('lib-back').addEventListener('click', () => { if (world) showMap(); else showPlan(); });
+  $('lib-back').addEventListener('click', showMap);
   $('lib-search').addEventListener('input', (event) => { library.query = event.target.value; renderLibrary(); });
   $('lib-hide').addEventListener('change', (event) => { library.hideDone = event.target.checked; renderLibrary(); });
   $('to-map').addEventListener('click', () => { showMap(); });
@@ -927,54 +644,305 @@ function bindEvents() {
     document.documentElement.dataset.theme = next;
     try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* not remembered */ }
     labelTheme();
-    world?.refreshTheme();
   });
-  window.addEventListener('resize', () => { world?.resize(); panelShift(); });
+  window.addEventListener('resize', drawLinks);
+  new ResizeObserver(drawLinks).observe($('road'));
   window.addEventListener('hashchange', openFromHash);
-  bindKeys();
+  document.addEventListener('keydown', (event) => {
+    const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName) && document.activeElement.type !== 'checkbox';
+    if (event.key === 'Escape') {
+      if (!$('palette').hidden) closePalette();
+      else if (selectedPhase) closePanel();
+    } else if ((event.key === 'k' && (event.ctrlKey || event.metaKey)) || (event.key === '/' && !typing)) {
+      event.preventDefault();
+      openPalette();
+    }
+  });
 }
 
-function startWorld() {
-  try {
-    world = createScene({
-      canvas: $('gl'), labelRoot: $('labels'), data, labels: labelFactory, isDone,
-      callbacks: {
-        onUserInput: () => { stopPlay(); dismissHint(); },
-        onPhase: focusPhase,
-        onTopic: focusTopic,
-        onExam: (id) => openPanel(id, null, 'exams'),
-        onHover: hoverPhase,
-      },
-    });
-  } catch (e) {
-    world = null;
+init();
+
+/* Actions and pace */
+
+const focusPhase = (phaseId) => openPanel(phaseId);
+
+function focusTopic(phaseId, topicId) {
+  openPanel(phaseId, topicId, 'topics');
+}
+
+const topicStep = (topic) => {
+  if (isDone(`t:${topic.id}`)) return 3;
+  if (isDone(`s:${topic.id}`)) return 3;
+  if (isDone(`l:${topic.id}`)) return 2;
+  return topic.videos.some((video) => isDone(`v:${video.id}`)) ? 1 : 0;
+};
+
+function nextTopic() {
+  const now = clampMonth(currentMonth());
+  const ordered = data.phases.slice().sort((a, b) => Number(inFocus(b, now)) - Number(inFocus(a, now)) || a.start - b.start);
+  for (const phase of ordered) {
+    const topic = phase.topics.find((candidate) => !isDone(`t:${candidate.id}`));
+    if (topic) return { phase, topic };
   }
+  return null;
+}
+
+function nextAction(found) {
+  const { phase, topic } = found;
+  const go = () => focusTopic(phase.id, topic.id);
+  const step = topicStep(topic);
+  if (step === 0) {
+    const video = topic.videos[0];
+    return {
+      n: 1, title: `Watch ${video.title}`, detail: `${formatLength(video)} · ${video.by}${video.note ? `. ${video.note}` : ''}`, cta: '▶ Watch',
+      run: () => { go(); playVideo(video); }, finish: () => setDone(`v:${video.id}`, true), finishLabel: 'I watched it',
+    };
+  }
+  if (step === 1) return { n: 2, title: 'Do the lab', detail: topic.lab, cta: 'Open the topic', run: go, finish: () => setDone(`l:${topic.id}`, true), finishLabel: 'Lab done' };
+  if (step === 2) return { n: 3, title: 'Answer this without notes', detail: topic.check, cta: 'Open the topic', run: go, finish: () => setDone(`s:${topic.id}`, true), finishLabel: 'I can answer it' };
+  return { n: 3, title: 'Finish this topic', detail: 'Watched, practised and checked. Mark it done to move on.', cta: 'Open the topic', run: go, finish: () => setDone(`t:${topic.id}`, true), finishLabel: 'Mark topic done' };
+}
+
+function expectedDone(at) {
+  return data.phases.reduce((sum, phase) => {
+    const span = phase.end + 1 - phase.start;
+    return sum + Math.floor(Math.min(1, Math.max(0, (at - phase.start) / span)) * phase.topics.length);
+  }, 0);
+}
+
+function paceText(done) {
+  const now = currentMonth();
+  if (now < 1) return { text: `Starts ${monthLabel(1)}`, state: 'ahead' };
+  const gap = done - expectedDone(now);
+  if (gap < 0) return { text: `${-gap} ${gap === -1 ? 'topic' : 'topics'} behind plan`, state: 'behind' };
+  if (gap > 0) return { text: `${gap} ${gap === 1 ? 'topic' : 'topics'} ahead of plan`, state: 'ahead' };
+  return { text: 'On track', state: 'ahead' };
+}
+
+function renderNow() {
+  const total = allTopics().length;
+  const done = data.phases.reduce((sum, phase) => sum + topicsDone(phase), 0);
+  const found = nextTopic();
+  const pace = paceText(done);
+  const now = currentMonth();
+  const exam = allCerts().find((cert) => cert.core && !isDone(certKey(cert)));
+  const away = exam ? exam.month - Math.max(now, 1) : 0;
+  const stat = (big, small, cls = '') => el('div', { class: `now-stat ${cls}` }, el('b', { text: big }), el('span', { text: small }));
+  $('stats-row').replaceChildren(
+    stat(`${done}/${total}`, 'topics done'),
+    stat(pace.text, now < 1 ? 'first month of the plan' : `month ${clampMonth(now)} of ${TOTAL_MONTHS}`, pace.state === 'behind' ? 'warn' : ''),
+    stat(exam ? exam.exam : 'All passed', !exam ? 'every core exam' : away > 0 ? `in ${away} ${away === 1 ? 'month' : 'months'}, ${monthLabel(exam.month)}` : away === 0 ? 'due this month' : `${-away} months overdue`, away < 0 ? 'warn' : ''),
+  );
+  if (!found) {
+    $('action').replaceChildren(el('h2', { text: 'Every topic is done.' }), el('p', { text: 'Nothing left on the road. Check the exams and projects.' }));
+    $('week-card').replaceChildren();
+    return;
+  }
+  const action = nextAction(found);
+  $('action').style.setProperty('--c', color(found.phase));
+  $('action').replaceChildren(
+    el('p', { class: 'action-kicker' }, el('i', { class: 'swatch' }), `Do this next · ${found.topic.short}`),
+    el('h2', { text: action.title }),
+    el('p', { class: 'action-detail', text: action.detail }),
+    el('ol', { class: 'stepper', 'aria-label': `Step ${action.n} of 3` }, ...['Watch', 'Lab', 'Check'].map((label, i) => el('li', {
+      class: i < topicStep(found.topic) ? 'on' : i === topicStep(found.topic) ? 'cur' : '', text: label,
+    }))),
+    el('div', { class: 'now-actions' },
+      el('button', { class: 'now-go', type: 'button', text: action.cta, onclick: action.run }),
+      el('button', { class: 'ghost', type: 'button', text: `${action.finishLabel} ✓`, onclick: action.finish })),
+  );
+  renderWeek(found, exam);
+}
+
+function renderWeek(found, exam) {
+  const { phase, topic } = found;
+  const project = phase.projects.find((item) => !isDone(`p:${phase.id}:${item.name}`));
+  const task = (when, what, key, open) => el('li', { class: key && isDone(key) ? 'is-done' : '' },
+    key ? el('input', { class: 'check', type: 'checkbox', 'aria-label': what, checked: isDone(key), onchange: (event) => setDone(key, event.target.checked) }) : null,
+    el('span', { class: 'week-when', text: when }),
+    open ? el('button', { class: 'linkish', type: 'button', text: what, onclick: open }) : el('span', { text: what }));
+  const go = () => focusTopic(phase.id, topic.id);
+  const video = topic.videos[0];
+  const items = [
+    task('Tue · 90 min', `Watch: ${video.title}`, `v:${video.id}`, go),
+    task('Thu · 90 min', `Lab: ${topic.short}`, `l:${topic.id}`, go),
+    project ? task('Weekend · 5 h', `Build: ${project.name}`, `p:${phase.id}:${project.name}`, () => openPanel(phase.id, null, 'projects')) : null,
+    task('Daily · 10 min', 'Anki review'),
+  ];
+  if (exam && exam.month - Math.max(currentMonth(), 1) <= 6 && !isDone(certKey(exam))) {
+    items.unshift(task('This week', `Book ${exam.exam} for ${monthLabel(exam.month)}`, `k:${exam.exam}`, () => openPanel(exam.phase.id, null, 'exams')));
+  }
+  $('week-card').replaceChildren(el('h2', { text: 'This week' }), el('ul', { class: 'week-list' }, ...items));
+}
+
+/* The 2D roadmap */
+
+const ROWS = [['systems'], ['network', 'code'], ['cloud', 'k8s'], ['security', 'data'], ['principal']];
+let roadFilter = 'all';
+
+function phaseState(phase) {
+  const now = clampMonth(currentMonth());
+  if (topicsDone(phase) === phase.topics.length) return 'done';
+  if (inFocus(phase, now)) return 'now';
+  if (phase.start > now && phase.start - now <= 3) return 'soon';
+  if (phase.start > now) return 'later';
+  return practising(phase, now) ? 'ongoing' : 'overdue';
+}
+const STATE_LABEL = { done: 'Done', now: 'In focus', soon: 'Up next', later: 'Later', ongoing: 'Keep practising', overdue: 'Overdue' };
+
+function renderStrip() {
+  const pct = (value) => ((value - 1) / TOTAL_MONTHS) * 100;
+  const showOptional = $('optional').checked;
+  const today = currentMonth();
+  const todayMark = today >= 1 && today <= TOTAL_MONTHS
+    ? [el('div', { class: 'strip-today', style: `--at-n:${pct(today + (new Date().getDate() - 1) / 30) / 100}` }, el('span', { text: 'Today' }))]
+    : [];
+  $('strip').replaceChildren(
+    el('div', { class: 'strip-years' }, ...[0, 1, 2].map((year) => el('span', { style: `left:${(year * 12 / TOTAL_MONTHS) * 100}%`, text: monthLabel(year * 12 + 1) }))),
+    ...data.phases.map((phase) => el('button', {
+      class: 'strip-row', type: 'button', style: `--c:${color(phase)}`, title: `${phase.title}: ${monthLabel(phase.start)} to ${monthLabel(phase.end)}`,
+      onclick: () => document.getElementById(`phase-${phase.id}`).scrollIntoView({ block: 'start' }),
+    },
+    el('span', { class: 'strip-name', text: `${phase.n} ${phase.short}` }),
+    el('span', { class: 'strip-track' },
+      el('i', { style: `left:${pct(phase.start)}%;width:${pct(phase.end + 1) - pct(phase.start)}%` }, el('u', { style: `width:${phasePct(phase)}%` })),
+      ...phase.certs.filter((cert) => cert.core || showOptional).map((cert) => el('b', {
+        class: isDone(certKey(cert)) ? 'passed' : '', style: `left:${pct(cert.month + 0.5)}%`, title: `${cert.exam}, ${monthLabel(cert.month)}`,
+      }))))),
+    ...todayMark,
+  );
+}
+
+function topicMonth(phase, i) {
+  return Math.floor(phase.start + ((i + 0.5) / phase.topics.length) * (phase.end + 1 - phase.start));
+}
+
+function renderTopicRow(phase, topic, i, next) {
+  const key = `t:${topic.id}`;
+  const done = isDone(key);
+  const isNext = next?.topic.id === topic.id;
+  const step = done ? 3 : topicStep(topic);
+  return el('li', { class: `node${done ? ' done' : ''}${isNext ? ' next' : ''}${openTopic === topic.id ? ' open' : ''}`, id: `node-${topic.id}` },
+    el('input', { class: 'tick', type: 'checkbox', 'aria-label': `Done: ${topic.title}`, checked: done, onchange: (event) => setDone(key, event.target.checked) }),
+    el('button', { class: 'node-main', type: 'button', onclick: () => focusTopic(phase.id, topic.id) },
+      el('span', { class: 'node-title', text: topic.short }),
+      el('span', { class: 'node-meta' },
+        isNext ? el('em', { text: 'Next' }) : null,
+        `${monthLabel(topicMonth(phase, i))} · ${topic.videos.length + topic.resources.length} resources`)),
+    el('span', { class: 'dots', role: 'img', 'aria-label': `${step} of 3 steps done` }, ...[0, 1, 2].map((n) => el('i', { class: n < step ? 'on' : '' }))));
+}
+
+function renderExamRow(phase, cert) {
+  const key = certKey(cert);
+  return el('li', { class: `node exam${isDone(key) ? ' done' : ''}${cert.core ? '' : ' opt'}` },
+    el('input', { class: 'tick', type: 'checkbox', 'aria-label': `Passed ${cert.name}`, checked: isDone(key), onchange: (event) => setDone(key, event.target.checked) }),
+    el('button', { class: 'node-main', type: 'button', onclick: () => openPanel(phase.id, null, 'exams') },
+      el('span', { class: 'node-title', text: `Exam: ${cert.exam}` }),
+      el('span', { class: 'node-meta', text: `${monthLabel(cert.month)} · ${cert.cost}${cert.core ? '' : ' · optional'}` })));
+}
+
+function renderPhaseCard(phase, next) {
+  const state = phaseState(phase);
+  const showOptional = $('optional').checked;
+  const entries = [
+    ...phase.topics.map((topic, i) => ({ at: topicMonth(phase, i) + 0.1 * i / phase.topics.length, row: () => renderTopicRow(phase, topic, i, next), done: isDone(`t:${topic.id}`) })),
+    ...phase.certs.filter((cert) => cert.core || showOptional).map((cert) => ({ at: cert.month + 0.95, row: () => renderExamRow(phase, cert), done: isDone(certKey(cert)) })),
+  ].sort((a, b) => a.at - b.at).filter((entry) => roadFilter !== 'todo' || !entry.done);
+  const dimmed = (selectedPhase && selectedPhase !== phase.id) ? ' quiet' : '';
+  return el('article', { class: `phase ${state}${dimmed}`, id: `phase-${phase.id}`, 'data-phase': phase.id, style: `--c:${color(phase)}` },
+    el('header', { class: 'phase-head' },
+      el('span', { class: 'phase-n', text: phase.n }),
+      el('button', { class: 'phase-title', type: 'button', onclick: () => focusPhase(phase.id) },
+        el('strong', { text: phase.short }),
+        el('small', { text: `${monthLabel(phase.start)} – ${monthLabel(phase.end)}` })),
+      el('span', { class: `pill state-${state}`, text: STATE_LABEL[state] })),
+    el('div', { class: 'phase-progress' },
+      el('span', { class: 'meter' }, el('i', { style: `width:${phasePct(phase)}%` })),
+      el('small', { text: `${topicsDone(phase)}/${phase.topics.length}` })),
+    phase.needs.length ? el('p', { class: 'phase-needs', text: `Builds on ${phase.needs.map((id) => phaseById(id).short).join(', ')}` }) : null,
+    entries.length ? el('ol', { class: 'nodes' }, ...entries.map((entry) => entry.row())) : el('p', { class: 'phase-needs', text: 'Everything here is finished.' }));
+}
+
+function renderRoad() {
+  const next = nextTopic();
+  // Rows are rebuilt, so put keyboard focus back where it was.
+  const active = document.activeElement;
+  const focusRow = active?.closest?.('.node')?.id;
+  const focusClass = active?.classList?.[0];
+  const scope = (id) => {
+    if (roadFilter !== 'focus') return true;
+    const state = phaseState(phaseById(id));
+    return state === 'now' || state === 'soon' || state === 'overdue';
+  };
+  $('road-filter').querySelectorAll('[data-filter]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.filter === roadFilter)));
+  $('road-rows').replaceChildren(...ROWS
+    .map((row) => row.filter(scope))
+    .filter((row) => row.length)
+    .map((row) => el('div', { class: `road-row n${row.length}` }, ...row.map((id) => renderPhaseCard(phaseById(id), next)))));
+  if (focusRow && focusClass) document.getElementById(focusRow)?.querySelector(`.${focusClass}`)?.focus({ preventScroll: true });
+  drawLinks();
+}
+
+function syncOptional() {
+  const showOptional = $('optional').checked;
+  document.querySelectorAll('#ladder tr.is-opt').forEach((row) => row.classList.toggle('hide', !showOptional));
+}
+
+// Dependency lines between phase cards. Lines that skip a row run down the outer gutter.
+function drawLinks() {
+  const svg = $('links');
+  const road = $('road');
+  if (!road.offsetWidth) return;
+  const box = road.getBoundingClientRect();
+  const rect = (id) => {
+    const node = document.getElementById(`phase-${id}`);
+    if (!node) return null;
+    const r = node.getBoundingClientRect();
+    return { l: r.left - box.left, r: r.right - box.left, t: r.top - box.top, b: r.bottom - box.top, cx: (r.left + r.right) / 2 - box.left };
+  };
+  svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+  svg.setAttribute('height', box.height);
+  const paths = [];
+  const rowOf = (id) => ROWS.findIndex((row) => row.includes(id));
+  data.phases.forEach((phase) => {
+    phase.needs
+      .filter((need) => !phase.needs.some((other) => other !== need && ancestors(other).has(need)))
+      .forEach((need) => {
+        const from = rect(need);
+        const to = rect(phase.id);
+        if (!from || !to) return;
+        const skip = rowOf(phase.id) - rowOf(need) > 1;
+        let d;
+        if (skip) {
+          const x = box.width - 8;
+          d = `M${from.r} ${from.b - 40} C${x} ${from.b - 40} ${x} ${from.b + 20} ${x} ${from.b + 60} L${x} ${to.t - 20} C${x} ${to.t + 20} ${x} ${to.t + 40} ${to.r} ${to.t + 40}`;
+        } else {
+          const mid = (from.b + to.t) / 2;
+          d = `M${from.cx} ${from.b} C${from.cx} ${mid} ${to.cx} ${mid} ${to.cx} ${to.t}`;
+        }
+        const source = phaseById(need);
+        const state = topicsDone(source) === source.topics.length ? 'done' : inFocus(source, clampMonth(currentMonth())) ? 'live' : 'wait';
+        const quiet = selectedPhase && selectedPhase !== need && selectedPhase !== phase.id ? ' quiet' : '';
+        paths.push(`<path class="link ${state}${quiet}" style="--c:var(--s${source.n})" d="${d}"/>`);
+      });
+  });
+  svg.innerHTML = paths.join('');
 }
 
 async function init() {
-  document.body.classList.add('in-map');
   try {
     const response = await fetch('data/roadmap.json');
     if (!response.ok) throw new Error(response.status);
     data = await response.json();
   } catch (e) {
-    $('now-title').textContent = "The roadmap data couldn't load. Please reload the page.";
+    $('action').textContent = "The roadmap data couldn't load. Please reload the page.";
     return;
   }
+  month = clampMonth(currentMonth());
   labelTheme();
-  startWorld();
-  if (!world) {
-    // No WebGL: the plan view plus the phase list still gives full access to every course.
-    showPlan();
-    $('to-map').hidden = true;
-  }
-  renderGantt();
   renderStatic();
   bindEvents();
   refresh();
-  setMonth(currentMonth());
-  panelShift();
-  setTimeout(dismissHint, 8000);
   openFromHash();
 }
 
