@@ -2,6 +2,9 @@
 
 const STORE_KEY = 'the-path-progress-v1';
 const THEME_KEY = 'the-path-theme';
+const OPEN_KEY = 'the-path-open';
+const BACKUP_KEY = 'the-path-backup-at';
+const BACKUP_DAYS = 14;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const TOTAL_MONTHS = 36;
 
@@ -31,16 +34,32 @@ function setAttrs(node, attrs) {
   }
 }
 
+function cleanItems(items) {
+  const clean = {};
+  if (items && typeof items === 'object' && !Array.isArray(items)) {
+    Object.entries(items).forEach(([key, value]) => { if (value === true) clean[key] = true; });
+  }
+  return clean;
+}
+
 function loadProgress() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (saved && typeof saved === 'object') return { items: saved.items || {} };
+    if (saved && typeof saved === 'object') return { items: cleanItems(saved.items) };
   } catch (e) { /* storage blocked or corrupt: start empty */ }
   return { items: {} };
 }
 
+let storageOk = true;
+
 function saveProgress() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) { /* in-memory only */ }
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(progress));
+    storageOk = true;
+  } catch (e) {
+    storageOk = false;
+  }
+  renderNotice();
 }
 
 const isDone = (key) => Boolean(progress.items[key]);
@@ -49,15 +68,17 @@ function setDone(key, value) {
   if (value) progress.items[key] = true;
   else delete progress.items[key];
   saveProgress();
-  if (value && key.startsWith('t:')) celebrate(key.slice(2));
+  const whole = value && key.startsWith('t:') && celebrate(key.slice(2));
   refresh();
+  if (/^[tvlsc]:/.test(key)) {
+    toast(whole || (value ? 'Saved' : 'Unticked'), () => setDone(key, !value));
+  }
 }
 
 function celebrate(topicId) {
   const found = allTopics().find(({ topic }) => topic.id === topicId);
-  if (!found) return;
-  const whole = topicsDone(found.phase) === found.phase.topics.length;
-  if (whole) toast(`Phase ${found.phase.n} complete: ${found.phase.title}`);
+  if (!found || topicsDone(found.phase) !== found.phase.topics.length) return '';
+  return `Phase ${found.phase.n} complete: ${found.phase.title}`;
 }
 
 function monthLabel(value) {
@@ -153,12 +174,15 @@ function playVideo(video) {
 }
 
 
-function toast(message) {
+function toast(message, undo) {
   const node = $('toast');
-  node.textContent = message;
+  node.replaceChildren(el('span', { text: message }), undo ? el('button', {
+    type: 'button', text: 'Undo',
+    onclick: () => { node.classList.remove('show'); undo(); node.classList.remove('show'); clearTimeout(toast.timer); },
+  }) : '');
   node.classList.add('show');
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => node.classList.remove('show'), 2600);
+  toast.timer = setTimeout(() => node.classList.remove('show'), undo ? 6000 : 3000);
 }
 
 function renderStats() {
@@ -471,6 +495,7 @@ function openPanel(phaseId, topicId = null, tab = 'overview') {
   document.body.classList.add('panel-open');
   history.replaceState(null, '', `#${phaseId}${topicId ? `/${topicId}` : ''}`);
   if (topicId) {
+    revealPhase(phaseId);
     selectTopic(topicId);
     const row = document.getElementById(`topic-${topicId}`);
     if (row) $('panel').scrollTop = row.offsetTop - $('panel').querySelector('.panel-head').offsetHeight - 8;
@@ -572,20 +597,102 @@ function choosePalette(i) {
 
 /* Wiring */
 
+function markBackedUp() {
+  try { localStorage.setItem(BACKUP_KEY, String(Date.now())); } catch (e) { /* not remembered */ }
+  renderNotice();
+}
+
 function exportProgress() {
   const blob = new Blob([JSON.stringify(progress, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   el('a', { href: url, download: 'the-path-progress.json' }).click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  markBackedUp();
+}
+
+function mergeProgress(items) {
+  const clean = cleanItems(items);
+  const before = progress;
+  const added = Object.keys(clean).filter((key) => !before.items[key]).length;
+  progress = { items: { ...before.items, ...clean } };
+  saveProgress();
+  refresh();
+  toast(`Added ${added} ${added === 1 ? 'tick' : 'ticks'}. Nothing was removed.`, () => { progress = before; saveProgress(); refresh(); });
+}
+
+/* Sync link: progress travels inside the link's # part, which browsers never send to a server. */
+
+const toBase64Url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const fromBase64Url = (text) => Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), (char) => char.charCodeAt(0));
+
+async function streamBytes(bytes, stream) {
+  const writer = stream.writable.getWriter();
+  writer.write(bytes);
+  writer.close();
+  return new Uint8Array(await new Response(stream.readable).arrayBuffer());
+}
+
+async function syncLink() {
+  const raw = new TextEncoder().encode(JSON.stringify(Object.keys(progress.items)));
+  const packed = await streamBytes(raw, new CompressionStream('gzip'));
+  return `${location.origin}${location.pathname}#sync=${toBase64Url(packed)}`;
+}
+
+async function copySyncLink() {
+  try {
+    const link = await syncLink();
+    await navigator.clipboard.writeText(link);
+    $('copy-link').textContent = 'Copied ✓';
+    setTimeout(() => { $('copy-link').textContent = 'Copy sync link'; }, 2500);
+    markBackedUp();
+  } catch (e) {
+    window.alert("Couldn't create or copy the link here. Use the backup file instead.");
+  }
+}
+
+async function readSyncLink() {
+  const match = location.hash.match(/^#sync=(.+)$/);
+  if (!match) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  try {
+    const raw = await streamBytes(fromBase64Url(match[1]), new DecompressionStream('gzip'));
+    const keys = JSON.parse(new TextDecoder().decode(raw));
+    if (!Array.isArray(keys)) throw new Error('bad shape');
+    if (window.confirm(`Add ${keys.length} ticks from this link to this browser? Nothing will be removed.`)) {
+      mergeProgress(Object.fromEntries(keys.filter((key) => typeof key === 'string').map((key) => [key, true])));
+    }
+  } catch (e) {
+    toast("That sync link couldn't be read. Copy a new one.");
+  }
+}
+
+function renderNotice() {
+  const notice = $('notice');
+  if (!notice) return;
+  let message = '';
+  let action = null;
+  if (!storageOk) {
+    message = "This browser isn't saving your progress. Ticks will be lost when you close the page.";
+  } else if (!navigator.onLine) {
+    message = 'You are offline. The roadmap still works, but videos and links need a connection.';
+  } else if (Object.keys(progress.items).length >= 5) {
+    let last = 0;
+    try { last = Number(localStorage.getItem(BACKUP_KEY)) || 0; } catch (e) { /* treated as never */ }
+    if (Date.now() - last > BACKUP_DAYS * 86400000) {
+      message = 'Your progress lives only in this browser and has no recent backup.';
+      action = el('button', { class: 'linkish', type: 'button', text: 'Back up now', onclick: () => $('backup').showModal() });
+    }
+  }
+  notice.hidden = !message;
+  notice.replaceChildren(el('span', { text: message }), action || '');
 }
 
 async function importProgress(file) {
   try {
     const parsed = JSON.parse(await file.text());
     if (!parsed || typeof parsed.items !== 'object' || Array.isArray(parsed.items)) throw new Error('bad shape');
-    progress = { items: parsed.items };
-    saveProgress();
-    refresh();
+    mergeProgress(parsed.items);
+    $('backup').close();
   } catch (e) {
     window.alert("That file doesn't look like a progress export from this site.");
   }
@@ -610,11 +717,16 @@ function openFromHash() {
 
 function bindEvents() {
   $('optional').addEventListener('change', refresh);
-  $('road-filter').addEventListener('click', (event) => {
-    const button = event.target.closest('[data-filter]');
-    if (!button) return;
-    roadFilter = button.dataset.filter;
-    renderRoad();
+  $('expand-all').addEventListener('click', () => setOpen(openPhases.size === data.phases.length ? new Set() : new Set(data.phases.map((phase) => phase.id))));
+  $('hide-finished').addEventListener('change', (event) => { hideFinished = event.target.checked; renderRoad(); });
+  $('open-backup').addEventListener('click', () => $('backup').showModal());
+  $('backup-close').addEventListener('click', () => $('backup').close());
+  $('copy-link').addEventListener('click', copySyncLink);
+  window.addEventListener('online', renderNotice);
+  window.addEventListener('offline', renderNotice);
+  window.addEventListener('storage', (event) => {
+    // Another tab saved: adopt its progress instead of overwriting it later.
+    if (event.key === STORE_KEY) { progress = loadProgress(); refresh(); }
   });
   $('to-plan').addEventListener('click', showPlan);
   $('to-library').addEventListener('click', showLibrary);
@@ -637,7 +749,12 @@ function bindEvents() {
     event.target.value = '';
   });
   $('reset').addEventListener('click', () => {
-    if (window.confirm('Clear all your progress in this browser?')) { progress = { items: {} }; saveProgress(); refresh(); }
+    if (!window.confirm('Clear all your progress in this browser?')) return;
+    const before = progress;
+    progress = { items: {} };
+    saveProgress();
+    refresh();
+    toast('Progress cleared', () => { progress = before; saveProgress(); refresh(); });
   });
   $('theme').addEventListener('click', () => {
     const next = currentTheme() === 'dark' ? 'light' : 'dark';
@@ -647,7 +764,7 @@ function bindEvents() {
   });
   window.addEventListener('resize', drawLinks);
   new ResizeObserver(drawLinks).observe($('road'));
-  window.addEventListener('hashchange', openFromHash);
+  window.addEventListener('hashchange', () => { readSyncLink(); openFromHash(); });
   document.addEventListener('keydown', (event) => {
     const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName) && document.activeElement.type !== 'checkbox';
     if (event.key === 'Escape') {
@@ -660,7 +777,6 @@ function bindEvents() {
   });
 }
 
-init();
 
 /* Actions and pace */
 
@@ -727,11 +843,11 @@ function renderNow() {
   const now = currentMonth();
   const exam = allCerts().find((cert) => cert.core && !isDone(certKey(cert)));
   const away = exam ? exam.month - Math.max(now, 1) : 0;
-  const stat = (big, small, cls = '') => el('div', { class: `now-stat ${cls}` }, el('b', { text: big }), el('span', { text: small }));
-  $('stats-row').replaceChildren(
-    stat(`${done}/${total}`, 'topics done'),
-    stat(pace.text, now < 1 ? 'first month of the plan' : `month ${clampMonth(now)} of ${TOTAL_MONTHS}`, pace.state === 'behind' ? 'warn' : ''),
-    stat(exam ? exam.exam : 'All passed', !exam ? 'every core exam' : away > 0 ? `in ${away} ${away === 1 ? 'month' : 'months'}, ${monthLabel(exam.month)}` : away === 0 ? 'due this month' : `${-away} months overdue`, away < 0 ? 'warn' : ''),
+  const examText = !exam ? 'all core exams passed' : away > 0 ? `${exam.exam} in ${away} ${away === 1 ? 'month' : 'months'}` : away === 0 ? `${exam.exam} due this month` : `${exam.exam} ${-away} months overdue`;
+  $('status').replaceChildren(
+    el('b', { text: `${done} of ${total} topics` }),
+    el('span', { class: pace.state === 'behind' ? 'warn' : '', text: pace.text }),
+    el('span', { class: away < 0 ? 'warn' : '', text: examText }),
   );
   if (!found) {
     $('action').replaceChildren(el('h2', { text: 'Every topic is done.' }), el('p', { text: 'Nothing left on the road. Check the exams and projects.' }));
@@ -778,7 +894,32 @@ function renderWeek(found, exam) {
 /* The 2D roadmap */
 
 const ROWS = [['systems'], ['network', 'code'], ['cloud', 'k8s'], ['security', 'data'], ['principal']];
-let roadFilter = 'all';
+let hideFinished = false;
+let openPhases = null;
+
+function loadOpen() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(OPEN_KEY));
+    if (Array.isArray(saved)) return new Set(saved);
+  } catch (e) { /* fall through to the default */ }
+  return new Set(data.phases.filter((phase) => phaseState(phase) === 'now' || phaseState(phase) === 'overdue').map((phase) => phase.id));
+}
+
+function setOpen(ids) {
+  openPhases = ids;
+  try { localStorage.setItem(OPEN_KEY, JSON.stringify([...ids])); } catch (e) { /* not remembered */ }
+  renderRoad();
+}
+
+function togglePhase(id) {
+  const ids = new Set(openPhases);
+  if (ids.has(id)) ids.delete(id); else ids.add(id);
+  setOpen(ids);
+}
+
+function revealPhase(id) {
+  if (!openPhases.has(id)) setOpen(new Set([...openPhases, id]));
+}
 
 function phaseState(phase) {
   const now = clampMonth(currentMonth());
@@ -801,7 +942,7 @@ function renderStrip() {
     el('div', { class: 'strip-years' }, ...[0, 1, 2].map((year) => el('span', { style: `left:${(year * 12 / TOTAL_MONTHS) * 100}%`, text: monthLabel(year * 12 + 1) }))),
     ...data.phases.map((phase) => el('button', {
       class: 'strip-row', type: 'button', style: `--c:${color(phase)}`, title: `${phase.title}: ${monthLabel(phase.start)} to ${monthLabel(phase.end)}`,
-      onclick: () => document.getElementById(`phase-${phase.id}`).scrollIntoView({ block: 'start' }),
+      onclick: () => { revealPhase(phase.id); document.getElementById(`phase-${phase.id}`).scrollIntoView({ block: 'start' }); },
     },
     el('span', { class: 'strip-name', text: `${phase.n} ${phase.short}` }),
     el('span', { class: 'strip-track' },
@@ -847,20 +988,25 @@ function renderPhaseCard(phase, next) {
   const entries = [
     ...phase.topics.map((topic, i) => ({ at: topicMonth(phase, i) + 0.1 * i / phase.topics.length, row: () => renderTopicRow(phase, topic, i, next), done: isDone(`t:${topic.id}`) })),
     ...phase.certs.filter((cert) => cert.core || showOptional).map((cert) => ({ at: cert.month + 0.95, row: () => renderExamRow(phase, cert), done: isDone(certKey(cert)) })),
-  ].sort((a, b) => a.at - b.at).filter((entry) => roadFilter !== 'todo' || !entry.done);
+  ].sort((a, b) => a.at - b.at).filter((entry) => !hideFinished || !entry.done);
+  const open = openPhases.has(phase.id);
+  const upcoming = phase.topics.find((topic) => !isDone(`t:${topic.id}`));
   const dimmed = (selectedPhase && selectedPhase !== phase.id) ? ' quiet' : '';
-  return el('article', { class: `phase ${state}${dimmed}`, id: `phase-${phase.id}`, 'data-phase': phase.id, style: `--c:${color(phase)}` },
-    el('header', { class: 'phase-head' },
+  return el('article', { class: `phase ${state}${dimmed}${open ? ' is-open' : ''}`, id: `phase-${phase.id}`, 'data-phase': phase.id, style: `--c:${color(phase)}` },
+    el('button', { class: 'phase-toggle', type: 'button', 'aria-expanded': String(open), onclick: () => togglePhase(phase.id) },
       el('span', { class: 'phase-n', text: phase.n }),
-      el('button', { class: 'phase-title', type: 'button', onclick: () => focusPhase(phase.id) },
+      el('span', { class: 'phase-title' },
         el('strong', { text: phase.short }),
         el('small', { text: `${monthLabel(phase.start)} – ${monthLabel(phase.end)}` })),
-      el('span', { class: `pill state-${state}`, text: STATE_LABEL[state] })),
+      el('span', { class: `pill state-${state}`, text: STATE_LABEL[state] }),
+      el('span', { class: 'chev', 'aria-hidden': 'true', text: '›' })),
     el('div', { class: 'phase-progress' },
       el('span', { class: 'meter' }, el('i', { style: `width:${phasePct(phase)}%` })),
       el('small', { text: `${topicsDone(phase)}/${phase.topics.length}` })),
-    phase.needs.length ? el('p', { class: 'phase-needs', text: `Builds on ${phase.needs.map((id) => phaseById(id).short).join(', ')}` }) : null,
-    entries.length ? el('ol', { class: 'nodes' }, ...entries.map((entry) => entry.row())) : el('p', { class: 'phase-needs', text: 'Everything here is finished.' }));
+    open ? null : el('p', { class: 'phase-needs', text: upcoming ? `Next: ${upcoming.short}` : 'All topics finished' }),
+    open ? el('button', { class: 'linkish phase-about', type: 'button', text: 'Goals, projects and reading', onclick: () => focusPhase(phase.id) }) : null,
+    open && phase.needs.length ? el('p', { class: 'phase-needs', text: `Builds on ${phase.needs.map((id) => phaseById(id).short).join(', ')}` }) : null,
+    !open ? null : entries.length ? el('ol', { class: 'nodes' }, ...entries.map((entry) => entry.row())) : el('p', { class: 'phase-needs', text: 'Everything here is finished.' }));
 }
 
 function renderRoad() {
@@ -869,15 +1015,8 @@ function renderRoad() {
   const active = document.activeElement;
   const focusRow = active?.closest?.('.node')?.id;
   const focusClass = active?.classList?.[0];
-  const scope = (id) => {
-    if (roadFilter !== 'focus') return true;
-    const state = phaseState(phaseById(id));
-    return state === 'now' || state === 'soon' || state === 'overdue';
-  };
-  $('road-filter').querySelectorAll('[data-filter]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.filter === roadFilter)));
+  $('expand-all').textContent = openPhases.size === data.phases.length ? 'Collapse all' : 'Expand all';
   $('road-rows').replaceChildren(...ROWS
-    .map((row) => row.filter(scope))
-    .filter((row) => row.length)
     .map((row) => el('div', { class: `road-row n${row.length}` }, ...row.map((id) => renderPhaseCard(phaseById(id), next)))));
   if (focusRow && focusClass) document.getElementById(focusRow)?.querySelector(`.${focusClass}`)?.focus({ preventScroll: true });
   drawLinks();
@@ -935,15 +1074,23 @@ async function init() {
     if (!response.ok) throw new Error(response.status);
     data = await response.json();
   } catch (e) {
-    $('action').textContent = "The roadmap data couldn't load. Please reload the page.";
+    $('action').replaceChildren(
+      el('h2', { text: "The roadmap couldn't load" }),
+      el('p', { class: 'action-detail', text: 'Your progress is safe. Check your connection and try again.' }),
+      el('button', { class: 'now-go', type: 'button', text: 'Try again', onclick: () => location.reload() }),
+    );
     return;
   }
   month = clampMonth(currentMonth());
+  openPhases = loadOpen();
   labelTheme();
   renderStatic();
   bindEvents();
   refresh();
+  renderNotice();
+  await readSyncLink();
   openFromHash();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { /* still works online */ });
 }
 
 init();

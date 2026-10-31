@@ -6,6 +6,8 @@
 <title>The Path</title>
 <meta name="description" content="An interactive 36-month roadmap from senior DevOps to principal engineer, with free video courses, labs and self-checks for every topic.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M6 22h6l4-12h10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#121211">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="map.css">
 <script>
@@ -14,6 +16,7 @@
 </head>
 <body>
 <a class="skip" href="#road">Skip to the roadmap</a>
+<div class="notice" id="notice" role="status" hidden></div>
 
 <div id="map-view">
   <header class="topbar">
@@ -23,26 +26,27 @@
         <button class="hud-btn" id="open-search" type="button"><span>Search</span><kbd>/</kbd></button>
         <button class="hud-btn" id="to-library" type="button">Library</button>
         <button class="hud-btn" id="to-plan" type="button">Plan</button>
+        <button class="hud-btn" id="open-backup" type="button">Backup</button>
         <button class="hud-btn" id="theme" type="button">Theme</button>
       </nav>
     </div>
   </header>
   <main class="wrap road-page">
+    <p class="status" id="status" role="status"></p>
     <section class="now-grid" aria-label="What to do now">
       <div class="action" id="action"></div>
       <div class="week-card" id="week-card"></div>
     </section>
-    <section class="stats-row" id="stats-row" aria-label="Your progress"></section>
-    <section class="strip" id="strip" aria-label="36-month timeline"></section>
     <div class="road-tools">
       <h2>The roadmap</h2>
-      <div class="chips" id="road-filter" role="group" aria-label="Filter the roadmap">
-        <button class="chip" type="button" data-filter="all">Everything</button>
-        <button class="chip" type="button" data-filter="focus">Now and next</button>
-        <button class="chip" type="button" data-filter="todo">Hide finished</button>
-      </div>
+      <button class="hud-btn" id="expand-all" type="button">Expand all</button>
+      <label class="dock-opt"><input id="hide-finished" type="checkbox"> Hide finished</label>
       <label class="dock-opt"><input id="optional" type="checkbox"> Optional exams</label>
     </div>
+    <details class="timeline">
+      <summary>36-month timeline</summary>
+      <div class="strip" id="strip"></div>
+    </details>
     <section class="road" id="road" aria-label="Roadmap by phase">
       <svg class="links" id="links" aria-hidden="true" width="100%"></svg>
       <div class="road-rows" id="road-rows"></div>
@@ -143,10 +147,8 @@
   </section>
   </main>
   <footer class="wrap foot">
-  <p>Your progress is saved in this browser only. Move it between devices with export and import.</p>
+  <p>Your progress is saved in this browser. Use Backup on the roadmap to move it between devices.</p>
   <div class="foot-actions">
-    <button class="ghost" id="export" type="button">Export progress</button>
-    <label class="ghost file">Import progress<input id="import" type="file" accept="application/json"></label>
     <button class="ghost" id="reset" type="button">Reset</button>
   </div>
 </footer>
@@ -174,6 +176,19 @@
 
 <div class="scrim" id="scrim" hidden></div>
 <aside class="panel" id="panel" aria-labelledby="panel-title" tabindex="-1" hidden></aside>
+<dialog class="backup" id="backup" aria-labelledby="backup-title">
+  <h2 id="backup-title">Keep your progress safe</h2>
+  <p>Progress is stored in this browser only. Clearing site data removes it, so keep a copy.</p>
+  <h3>Move to another device</h3>
+  <p>Copy this link and open it on the other device. It adds your ticks there and removes nothing. Anyone with the link can see your ticks, and it copies them at this moment, so it won't stay in sync by itself.</p>
+  <button class="now-go" id="copy-link" type="button">Copy sync link</button>
+  <h3>Backup file</h3>
+  <div class="now-actions">
+    <button class="ghost" id="export" type="button">Download backup</button>
+    <label class="ghost file">Restore from file<input id="import" type="file" accept="application/json"></label>
+  </div>
+  <button class="linkish backup-close" id="backup-close" type="button">Close</button>
+</dialog>
 <div class="player-float" id="player" hidden></div>
 <div class="palette" id="palette" hidden role="dialog" aria-modal="true" aria-label="Search everything">
   <div class="palette-box">

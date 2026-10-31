@@ -30,14 +30,16 @@ kbd { font: 500 .6875rem var(--mono); border: 1px solid var(--line); border-radi
 .week-when { font-size: .75rem; color: var(--text-2); }
 .week-list .linkish { text-align: left; padding: 0; }
 .week-list .is-done .linkish { text-decoration: line-through; color: var(--text-2); }
-.road-page .stats-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
-.now-stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; min-width: 0; }
-.now-stat b { display: block; font-size: 1.0625rem; }
-.now-stat span { font-size: .75rem; color: var(--text-2); }
-.now-stat.warn b::before { content: "⚠ "; color: #d03b3b; }
+.status { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 10px; font-size: .875rem; color: var(--text-2); }
+.status b { color: var(--text); }
+.status .warn { color: #d03b3b; font-weight: 700; }
+.status .warn::before { content: "⚠ "; }
+.notice { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; padding: 8px 16px; background: var(--surface-2); border-bottom: 1px solid var(--line); font-size: .875rem; text-align: center; }
+.timeline { margin: 14px 0; }
+.timeline summary { cursor: pointer; font-size: .875rem; font-weight: 600; min-height: 32px; }
 
 /* Timeline */
-.road-page .strip { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; --name: 138px; }
+.strip { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; --name: 138px; }
 .strip-years { position: relative; height: 18px; margin-left: var(--name); }
 .strip-years span { position: absolute; font: 500 .6875rem var(--mono); color: var(--text-2); white-space: nowrap; }
 .strip-row { display: grid; grid-template-columns: var(--name) minmax(0, 1fr); align-items: center; width: 100%; padding: 2px 0; background: none; border: 0; cursor: pointer; color: var(--text); text-align: left; }
@@ -72,12 +74,15 @@ kbd { font: 500 .6875rem var(--mono); border: 1px solid var(--line); border-radi
 .phase.now { box-shadow: 0 0 0 1px var(--c), 0 8px 34px -14px var(--c); }
 .phase.later { background: color-mix(in srgb, var(--surface) 70%, var(--bg)); }
 .phase.quiet { opacity: .6; }
-.phase-head { display: flex; align-items: center; gap: 10px; }
+.phase-toggle { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0; border: 0; background: none; color: var(--text); text-align: left; cursor: pointer; }
+.phase-toggle:hover strong { text-decoration: underline; }
+.chev { flex: none; font-size: 1.25rem; line-height: 1; color: var(--text-2); transition: transform .15s; }
+.is-open .chev { transform: rotate(90deg); }
+.phase-about { display: inline-block; margin-top: 6px; padding: 0; font-size: .8125rem; }
 .phase-n { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #fff; font-weight: 800; font-size: .875rem; }
-.phase-title { flex: 1; min-width: 0; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; color: var(--text); }
+.phase-title { flex: 1; min-width: 0; }
 .phase-title strong { display: block; font-size: 1.0625rem; line-height: 1.2; }
-.phase-title:hover strong { text-decoration: underline; }
-.phase-title small { font-size: .75rem; color: var(--text-2); }
+.phase-title small { display: block; font-size: .75rem; color: var(--text-2); }
 .state-now { background: var(--text); color: var(--bg); border-color: var(--text); }
 .state-overdue { border-color: #d03b3b; color: #d03b3b; }
 .phase-progress { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
@@ -108,8 +113,15 @@ kbd { font: 500 .6875rem var(--mono); border: 1px solid var(--line); border-radi
 .dots i.on { background: var(--c); }
 .step-callout { display: flex; gap: 10px; cursor: pointer; }
 .step-callout .detail-label { display: block; }
-.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(10px); z-index: 35; border-radius: 99px; padding: 8px 16px; background: var(--text); color: var(--bg); font-size: .875rem; font-weight: 600; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; max-width: calc(100vw - 24px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(10px); z-index: 35; border-radius: 99px; padding: 8px 16px; background: var(--text); color: var(--bg); font-size: .875rem; font-weight: 600; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; max-width: calc(100vw - 24px); display: flex; gap: 12px; align-items: center; }
+.toast button { pointer-events: auto; min-height: 28px; padding: 2px 10px; border: 1px solid currentColor; border-radius: 99px; background: none; color: inherit; font-weight: 700; cursor: pointer; }
 .toast.show { opacity: 1; transform: translateX(-50%); }
+.backup { width: min(480px, calc(100vw - 24px)); padding: 20px; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 14px; }
+.backup::backdrop { background: rgb(0 0 0 / .55); }
+.backup h2 { margin: 0 0 6px; font-size: 1.125rem; }
+.backup h3 { margin: 16px 0 4px; font-size: .875rem; }
+.backup p { margin: 0 0 8px; font-size: .875rem; color: var(--text-2); }
+.backup-close { display: block; margin: 16px 0 0 auto; }
 
 @media (min-width: 1240px) {
   .panel-open #map-view .wrap, .panel-open .road-page { margin-right: 590px; margin-left: 12px; max-width: none; }
@@ -174,9 +186,8 @@ kbd { font: 500 .6875rem var(--mono); border: 1px solid var(--line); border-radi
   .hud-btn { padding: 6px 9px; font-size: .75rem; }
   .brand { font-size: .9375rem; }
   .action h2 { font-size: 1.25rem; }
-  .stats-row { grid-template-columns: minmax(0, 1fr); gap: 6px; }
-  .now-stat { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-  .road-page .strip { --name: 26px; padding-inline: 10px; }
+  .topbar-in { flex-wrap: wrap; }
+  .strip { --name: 26px; padding-inline: 10px; }
   .strip-name { overflow: hidden; width: 22px; white-space: nowrap; text-overflow: clip; }
   .week-list li { grid-template-columns: 22px minmax(0, 1fr); }
   .week-when { grid-column: 2; }
